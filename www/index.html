@@ -102,7 +102,7 @@ if (typeof btoa == 'undefined') {
 		<span class="error">Your browser does not support<br>the HTML5 &lt;canvas&gt; element</span>
 	</canvas>
 	<div>
-		<p class="center">Export as: <a href="javascript:saveAsPNG()">PNG</a> | <a href="javascript:saveAsSVG()">SVG</a> | <a href="javascript:saveAsLaTeX()">LaTeX</a></p>
+		<p class="center">Export as <a href="javascript:saveAsPNG()">PNG</a></p>
 		<textarea id="output"></textarea>
 		<p>The big white box above is the FSM designer.&nbsp; Here's how to use it:</p>
 		<ul>
@@ -118,4 +118,26 @@ if (typeof btoa == 'undefined') {
 		<p>This was made in HTML5 and JavaScript using the canvas element.</p>
 	</div>
 	<p>Created by <a href="http://madebyevan.com/">Evan Wallace</a> in 2010</p>
+	<p>Patched by <a href="https://github.com/danya02">@danya02</a> of RUDN Lab</p>
+
+	<script>
+		document.getElementById('output').oninput = function (ev) {
+			do_not_refresh = true;
+			try {
+				var data = JSON.parse(ev.target.value);
+				restoreFromStruct(data);
+				do_not_refresh = false;
+				ev.target.style.border = '4px solid green';
+			} catch (e) {
+				console.error("Error while restoring: "+e);
+				ev.target.style.border = '4px solid red';
+			}
+		}
+
+		document.getElementById('output').onblur = function (ev) {
+			do_not_refresh = false;
+			ev.target.style.border = '';
+
+		}
+	</script>
 </body></html>

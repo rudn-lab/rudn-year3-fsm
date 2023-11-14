@@ -5,47 +5,49 @@ function restoreBackup() {
 
 	try {
 		var backup = JSON.parse(localStorage['fsm']);
-
-		for(var i = 0; i < backup.nodes.length; i++) {
-			var backupNode = backup.nodes[i];
-			var node = new Node(backupNode.x, backupNode.y);
-			node.isAcceptState = backupNode.isAcceptState;
-			node.text = backupNode.text;
-			nodes.push(node);
-		}
-		for(var i = 0; i < backup.links.length; i++) {
-			var backupLink = backup.links[i];
-			var link = null;
-			if(backupLink.type == 'SelfLink') {
-				link = new SelfLink(nodes[backupLink.node]);
-				link.anchorAngle = backupLink.anchorAngle;
-				link.text = backupLink.text;
-			} else if(backupLink.type == 'StartLink') {
-				link = new StartLink(nodes[backupLink.node]);
-				link.deltaX = backupLink.deltaX;
-				link.deltaY = backupLink.deltaY;
-				link.text = backupLink.text;
-			} else if(backupLink.type == 'Link') {
-				link = new Link(nodes[backupLink.nodeA], nodes[backupLink.nodeB]);
-				link.parallelPart = backupLink.parallelPart;
-				link.perpendicularPart = backupLink.perpendicularPart;
-				link.text = backupLink.text;
-				link.lineAngleAdjust = backupLink.lineAngleAdjust;
-			}
-			if(link != null) {
-				links.push(link);
-			}
-		}
+		restoreFromStruct(backup);
 	} catch(e) {
 		localStorage['fsm'] = '';
 	}
 }
 
-function saveBackup() {
-	if(!localStorage || !JSON) {
-		return;
+function restoreFromStruct(backup) {
+	nodes.length = 0;
+	links.length = 0;
+	for(var i = 0; i < backup.nodes.length; i++) {
+		var backupNode = backup.nodes[i];
+		var node = new Node(backupNode.x, backupNode.y);
+		node.isAcceptState = backupNode.isAcceptState;
+		node.text = backupNode.text;
+		nodes.push(node);
 	}
+	for(var i = 0; i < backup.links.length; i++) {
+		var backupLink = backup.links[i];
+		var link = null;
+		if(backupLink.type == 'SelfLink') {
+			link = new SelfLink(nodes[backupLink.node]);
+			link.anchorAngle = backupLink.anchorAngle;
+			link.text = backupLink.text;
+		} else if(backupLink.type == 'StartLink') {
+			link = new StartLink(nodes[backupLink.node]);
+			link.deltaX = backupLink.deltaX;
+			link.deltaY = backupLink.deltaY;
+			link.text = backupLink.text;
+		} else if(backupLink.type == 'Link') {
+			link = new Link(nodes[backupLink.nodeA], nodes[backupLink.nodeB]);
+			link.parallelPart = backupLink.parallelPart;
+			link.perpendicularPart = backupLink.perpendicularPart;
+			link.text = backupLink.text;
+			link.lineAngleAdjust = backupLink.lineAngleAdjust;
+		}
+		if(link != null) {
+			links.push(link);
+		}
+	}
+}
 
+
+function saveBackup() {
 	var backup = {
 		'nodes': [],
 		'links': [],
@@ -94,5 +96,11 @@ function saveBackup() {
 		}
 	}
 
-	localStorage['fsm'] = JSON.stringify(backup);
+	var jsondata = JSON.stringify(backup);
+	if(!localStorage || !JSON) {
+		return jsondata;
+	}
+
+	localStorage['fsm'] = jsondata;
+	return jsondata;
 }

@@ -102,6 +102,8 @@ var currentLink = null; // a Link
 var movingObject = false;
 var originalClick;
 
+var do_not_refresh = false;
+
 function drawUsing(c) {
 	c.clearRect(0, 0, canvas.width, canvas.height);
 	c.save();
@@ -115,7 +117,12 @@ function drawUsing(c) {
 	for(var i = 0; i < links.length; i++) {
 		c.lineWidth = 1;
 		c.fillStyle = c.strokeStyle = (links[i] == selectedObject) ? 'blue' : 'black';
-		links[i].draw(c);
+		try {
+			links[i].draw(c);
+		} catch (e) {
+			links.splice(i, 1);
+			i = i-1;
+		}
 	}
 	if(currentLink != null) {
 		c.lineWidth = 1;
@@ -128,7 +135,9 @@ function drawUsing(c) {
 
 function draw() {
 	drawUsing(canvas.getContext('2d'));
-	saveBackup();
+	if(!do_not_refresh) {
+		saveJson();
+	}
 }
 
 function selectObject(x, y) {
@@ -142,6 +151,7 @@ function selectObject(x, y) {
 			return links[i];
 		}
 	}
+	saveJson();
 	return null;
 }
 
@@ -165,6 +175,8 @@ window.onload = function() {
 	draw();
 
 	canvas.onmousedown = function(e) {
+		saveJson();
+
 		var mouse = crossBrowserRelativeMousePos(e);
 		selectedObject = selectObject(mouse.x, mouse.y);
 		movingObject = false;
@@ -376,24 +388,10 @@ function saveAsPNG() {
 	document.location.href = pngData;
 }
 
-function saveAsSVG() {
-	var exporter = new ExportAsSVG();
+function saveJson() {
 	var oldSelectedObject = selectedObject;
 	selectedObject = null;
-	drawUsing(exporter);
+	var jsonData = saveBackup();
 	selectedObject = oldSelectedObject;
-	var svgData = exporter.toSVG();
-	output(svgData);
-	// Chrome isn't ready for this yet, the 'Save As' menu item is disabled
-	// document.location.href = 'data:image/svg+xml;base64,' + btoa(svgData);
-}
-
-function saveAsLaTeX() {
-	var exporter = new ExportAsLaTeX();
-	var oldSelectedObject = selectedObject;
-	selectedObject = null;
-	drawUsing(exporter);
-	selectedObject = oldSelectedObject;
-	var texData = exporter.toLaTeX();
-	output(texData);
+	output(jsonData);
 }
