@@ -19,6 +19,33 @@ def word_logic(word) -> bool:
     return '000' not in word
 
 
+def has_zero_weight_cycle(nodes, links):
+    zero_links = [i for i in links if len(i[2]) == 0]
+
+    visited = [False for _ in nodes]
+    rec_stack = [False for _ in nodes]
+
+    def dfs(v):
+        visited[v] = True
+        rec_stack[v] = True
+
+        for link in [i for i in zero_links if i[0] == v]:
+            neighbor = link[1]
+            if rec_stack[neighbor]: return True
+            if dfs(neighbor): return True
+        
+        rec_stack[v] = False
+        return False
+
+    for node in range(len(nodes)):
+        if not visited[node]:
+            if dfs(node):
+                return [i for i in range(len(nodes)) if rec_stack[i]]
+    
+    return False
+
+
+
 try:
     try:
         data = ouf.read()
@@ -45,7 +72,7 @@ try:
     starts = []
     try:
         for node in data['nodes']:
-            nodes.append({'accept': node['isAcceptState']})
+            nodes.append({'accept': node['isAcceptState'], 'name': node.get('name', '<untitled>')})
         for link in data['links']:
             if link['type'] == 'StartLink':
                 n = int(link['node'])
@@ -80,7 +107,16 @@ try:
 
     if not starts:
         print("FSM does not have any start links, so it will always reject")
-        exit(PRESENTATION_ERROR)
+        exit(WRONG_ANSWER)
+
+    # Check for presence of any loops.
+    loop = has_zero_weight_cycle(nodes, links)
+    if loop:
+        print("Automaton has a zero-weight loop, which will be evaluated forever. The loop contains the following nodes:")
+        for i in loop:
+            print(f'- {i} ({nodes[i]["name"]})')
+        
+        exit(WRONG_ANSWER)
 
     # Now evaluate the FSM
 
@@ -110,14 +146,14 @@ try:
             node_a, node_b, prefix = links[link_idx]
             if word[word_idx:].startswith(prefix):
                 node_cursors.append((node_b, word_idx + len(prefix)))
-        
+
         # Check for accepts: nodes whose cursors are pointing past the word.
         # If there are any, stop and say accept.
         for node_idx, word_idx in node_cursors:
             node = nodes[node_idx]
             if word_idx == len(word):
                 if node['accept']:
-                    print(f'Cursor found at end of word in node {node_idx}, which ACCEPTs')
+                    print(f'Cursor found at end of word in node {node_idx} ({node["name"]}), which ACCEPTs')
                     # Automaton accepts
                     if word_logic(word):
                         print("Automaton's answer matches")
