@@ -169,8 +169,8 @@ function snapNode(node) {
 	}
 }
 
-window.onload = function() {
-	canvas = document.getElementById('canvas');
+var prepare_canvas = function(new_canvas) {
+	canvas = new_canvas;
 	restoreBackup();
 	draw();
 
@@ -373,19 +373,8 @@ function crossBrowserRelativeMousePos(e) {
 	};
 }
 
-function output(text) {
-	var element = document.getElementById('output');
-	element.style.display = 'block';
-	element.value = text;
-}
-
-function saveAsPNG() {
-	var oldSelectedObject = selectedObject;
-	selectedObject = null;
-	drawUsing(canvas.getContext('2d'));
-	selectedObject = oldSelectedObject;
-	var pngData = canvas.toDataURL('image/png');
-	document.location.href = pngData;
+function fetch_json() {
+	return saveJson();
 }
 
 function saveJson() {
@@ -393,5 +382,5 @@ function saveJson() {
 	selectedObject = null;
 	var jsonData = saveBackup();
 	selectedObject = oldSelectedObject;
-	output(jsonData);
+	return jsonData;
 }
