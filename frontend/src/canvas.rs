@@ -1,7 +1,7 @@
 use wasm_bindgen::prelude::*;
 use web_sys::Element;
 use yew::prelude::*;
-use yew_hooks::{use_interval, use_is_first_mount};
+use yew_hooks::use_interval;
 
 #[wasm_bindgen]
 extern "C" {
@@ -26,7 +26,7 @@ pub fn canvas() -> Html {
 
     html!(
         <>
-            <canvas ref={canvas_ref} width="800" height="600">
+            <canvas ref={canvas_ref} width="800" height="600" style="max-width: 800px; background: black; border-radius: 20px; margin: 10px auto; border: 1px white solid;">
             </canvas>
             <p>{text}</p>
         </>

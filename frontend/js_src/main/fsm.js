@@ -109,14 +109,13 @@ function drawUsing(c) {
 	c.save();
 	c.translate(0.5, 0.5);
 
+	c.lineWidth = 2;
 	for(var i = 0; i < nodes.length; i++) {
-		c.lineWidth = 1;
-		c.fillStyle = c.strokeStyle = (nodes[i] == selectedObject) ? 'blue' : 'black';
+		c.fillStyle = c.strokeStyle = (nodes[i] == selectedObject) ? 'red' : 'white';
 		nodes[i].draw(c);
 	}
 	for(var i = 0; i < links.length; i++) {
-		c.lineWidth = 1;
-		c.fillStyle = c.strokeStyle = (links[i] == selectedObject) ? 'blue' : 'black';
+		c.fillStyle = c.strokeStyle = (links[i] == selectedObject) ? 'red' : 'white';
 		try {
 			links[i].draw(c);
 		} catch (e) {
@@ -125,8 +124,7 @@ function drawUsing(c) {
 		}
 	}
 	if(currentLink != null) {
-		c.lineWidth = 1;
-		c.fillStyle = c.strokeStyle = 'black';
+		c.fillStyle = c.strokeStyle = 'white';
 		currentLink.draw(c);
 	}
 
