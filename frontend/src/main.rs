@@ -1,13 +1,16 @@
 mod canvas;
 mod profile;
 
+use gloo::storage::Storage;
 use yew::prelude::*;
 use yew_bootstrap::component::*;
 use yew_bootstrap::icons::*;
+use yew_router::prelude::Link;
 use yew_router::prelude::*;
 
 use crate::canvas::Canvas;
 use crate::profile::Profile;
+use crate::profile::ProfileNav;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
@@ -22,6 +25,17 @@ enum Route {
 
 #[function_component]
 fn Home() -> Html {
+    let navigator = use_navigator().unwrap();
+
+    let profile_key = gloo::storage::LocalStorage::get("token");
+    let profile_key: Option<String> = match profile_key {
+        Ok(key) => key,
+        Err(_) => None,
+    };
+    if profile_key.is_none() {
+        navigator.push(&Route::Profile);
+    }
+
     html! {
         <Canvas />
     }
@@ -37,22 +51,21 @@ fn App() -> Html {
         }
     }
 
-    let brand = BrandType::BrandSimple {
-        text: AttrValue::from("FSM Editor"),
-        url: Some(AttrValue::from("https://fsm.rudn-lab.ru")),
-    };
-
     html! {
-        <>
+        <BrowserRouter>
             {BIFiles::cdn()}
-            <NavBar class="navbar-expand-lg" brand={brand}>
-            </NavBar>
+            <nav class="navbar bg-body-tertiary">
+                <div class="container-fluid">
+                    <Link<Route> classes="navbar-brand" to={Route::Home}>{"FSM Editor"}</Link<Route>>
+                    <ul class="navbar-nav">
+                        <ProfileNav />
+                    </ul>
+                </div>
+            </nav>
             <Container>
-                <BrowserRouter>
-                    <Switch<Route> render={switch} />
-                </BrowserRouter>
+                <Switch<Route> render={switch} />
             </Container>
-        </>
+        </BrowserRouter>
     }
 }
 

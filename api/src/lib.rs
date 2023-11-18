@@ -1,13 +1,16 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum UserInfo {
-    Ok {
-        token: String,
-        name: String,
-        rudn_id: String,
-    },
+pub enum UserInfoResult {
+    Ok(UserInfo),
     NoSuchToken,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct UserInfo {
+    pub name: String,
+    pub rudn_id: String,
+    pub token: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

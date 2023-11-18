@@ -1,14 +1,20 @@
 use api::RegisterRequest;
 use api::UserInfo;
+use api::UserInfoResult;
 use gloo::storage::Storage;
 use shadow_clone::shadow_clone;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
+use yew::suspense::use_future;
 use yew_bootstrap::component::form::*;
 use yew_bootstrap::component::*;
 use yew_bootstrap::util::*;
 use yew_hooks::use_async;
+use yew_router::hooks::use_navigator;
+use yew_router::prelude::Link;
+
+use crate::Route;
 
 #[function_component(Profile)]
 pub fn profile() -> Html {
@@ -23,6 +29,69 @@ pub fn profile() -> Html {
     } else {
         html!(<Register />)
     }
+}
+
+#[function_component(ProfileNav)]
+pub fn profile_nav() -> Html {
+    let profile_key: Result<Option<String>, gloo::storage::errors::StorageError> =
+        gloo::storage::LocalStorage::get("token");
+    let profile_key: Option<String> = match profile_key {
+        Ok(key) => key,
+        Err(_) => None,
+    };
+
+    if let Some(key) = profile_key {
+        let fallback = html! {
+            <Link<Route> classes="nav-link" to={Route::Profile}>{"Loading user..."}</Link<Route>>
+        };
+        html!(
+            <li class="nav-item">
+                <Suspense {fallback}>
+                    <ProfileNavInner token={key} />
+                </Suspense>
+            </li>
+        )
+    } else {
+        html!(
+            <li class="nav-item">
+                <Link<Route> classes="nav-link" to={Route::Profile}>{"Login or register first"}</Link<Route>>
+            </li>
+        )
+    }
+}
+
+#[derive(Properties, PartialEq, Clone)]
+struct ProfileNavInnerProps {
+    pub token: AttrValue,
+}
+
+#[function_component(ProfileNavInner)]
+fn profile_nav_inner(props: &ProfileNavInnerProps) -> HtmlResult {
+    let navigator = use_navigator().unwrap();
+    let ProfileNavInnerProps { token } = props;
+    let token = token.clone();
+
+    let resp = use_future(|| async move {
+        reqwest::get(format!("https://fsm-api.rudn-lab.ru/user-info/{token}"))
+            .await?
+            .json::<UserInfoResult>()
+            .await
+    })?;
+
+    let result_html = match *resp {
+        Ok(ref res) => match res {
+            UserInfoResult::Ok(UserInfo { name, rudn_id, .. }) => {
+                format!("Hello, {name} ({rudn_id})")
+            }
+            UserInfoResult::NoSuchToken => {
+                navigator.push(&Route::Profile);
+                "User could not be loaded".to_string()
+            }
+        },
+        Err(ref failure) => failure.to_string(),
+    };
+
+    Ok(html!(<Link<Route> classes="nav-link" to={Route::Profile}>{result_html}</Link<Route>>))
 }
 
 #[function_component(Register)]
@@ -43,6 +112,8 @@ fn register() -> Html {
 
 #[function_component(NewRegister)]
 fn new_register() -> Html {
+    let navigator = use_navigator().unwrap();
+
     let name_state = use_state(|| String::new());
     let rudnid_state = use_state(|| String::new());
     let oninput_name = {
@@ -85,12 +156,7 @@ fn new_register() -> Html {
     };
 
     let validation = match &token_result.data {
-        Some(data) => match data {
-            UserInfo::Ok { .. } => FormControlValidation::Valid(None),
-            UserInfo::NoSuchToken => {
-                FormControlValidation::Invalid("This registration is not allowed".into())
-            }
-        },
+        Some(_) => FormControlValidation::Valid(None),
         None => match &token_result.error {
             Some(why) => FormControlValidation::Invalid(
                 format!("Error while registering token: {why}").into(),
@@ -100,9 +166,9 @@ fn new_register() -> Html {
     };
 
     if let Some(data) = &token_result.data {
-        if let UserInfo::Ok { token, .. } = data {
-            gloo::storage::LocalStorage::set("token", token.clone()).unwrap();
-        }
+        let UserInfo { token, .. } = data;
+        gloo::storage::LocalStorage::set("token", token.clone()).unwrap();
+        navigator.push(&Route::Home);
     }
 
     html!(
@@ -124,6 +190,7 @@ fn new_register() -> Html {
 
 #[function_component(ExistingRegister)]
 fn existing_register() -> Html {
+    let navigator = use_navigator().unwrap();
     let token_state = use_state(|| String::new());
     let oninput_token = {
         shadow_clone!(token_state);
@@ -132,7 +199,7 @@ fn existing_register() -> Html {
             token_state.set(target.value());
         }
     };
-    let token_result: yew_hooks::prelude::UseAsyncHandle<UserInfo, String> = use_async({
+    let token_result: yew_hooks::prelude::UseAsyncHandle<UserInfoResult, String> = use_async({
         shadow_clone!(token_state);
         async move {
             let token = (*token_state).clone();
@@ -140,7 +207,7 @@ fn existing_register() -> Html {
                 reqwest::get(format!("https://fsm-api.rudn-lab.ru/user-info/{token}"))
                     .await
                     .map_err(|v| v.to_string())?
-                    .json::<UserInfo>()
+                    .json::<UserInfoResult>()
                     .await
                     .map_err(|v| v.to_string())?,
             )
@@ -149,8 +216,8 @@ fn existing_register() -> Html {
 
     let validation = match &token_result.data {
         Some(data) => match data {
-            UserInfo::Ok { .. } => FormControlValidation::Valid(None),
-            UserInfo::NoSuchToken => {
+            UserInfoResult::Ok(_) => FormControlValidation::Valid(None),
+            UserInfoResult::NoSuchToken => {
                 FormControlValidation::Invalid("This token cannot be found".into())
             }
         },
@@ -170,8 +237,9 @@ fn existing_register() -> Html {
     };
 
     if let Some(data) = &token_result.data {
-        if let UserInfo::Ok { token, .. } = data {
+        if let UserInfoResult::Ok(UserInfo { token, .. }) = data {
             gloo::storage::LocalStorage::set("token", token.clone()).unwrap();
+            navigator.push(&Route::Home);
         }
     }
 
