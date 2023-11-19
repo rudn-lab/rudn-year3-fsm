@@ -40,6 +40,10 @@ pub async fn main() -> anyhow::Result<()> {
         .route("/tasks", get(task::get_taskgroups))
         .route("/tasks/:group", get(task::get_taskgroup))
         .route("/tasks/:group/:task", get(task::get_task))
+        .route(
+            "/tasks/:group/:task/:token",
+            get(task::get_task_and_userdata),
+        )
         .layer(
             tower_http::cors::CorsLayer::new()
                 .allow_methods(Any)

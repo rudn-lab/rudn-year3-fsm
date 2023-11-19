@@ -97,17 +97,17 @@ pub fn profile_nav() -> Html {
             <Link<Route> classes="nav-link" to={Route::Profile}>{"Loading user..."}</Link<Route>>
         };
         html!(
-            <li class="nav-item">
+            <div class="nav-item">
                 <Suspense {fallback}>
                     <ProfileNavInner token={key} />
                 </Suspense>
-            </li>
+            </div>
         )
     } else {
         html!(
-            <li class="nav-item">
+            <div class="nav-item">
                 <Link<Route> classes="nav-link" to={Route::Profile}>{"Login or register first"}</Link<Route>>
-            </li>
+            </div>
         )
     }
 }

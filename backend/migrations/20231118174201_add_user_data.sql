@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS account (
-    user_token TEXT NOT NULL PRIMARY KEY,
+    id INTEGER NOT NULL PRIMARY KEY,
+    user_token TEXT UNIQUE NOT NULL,
     user_name TEXT NOT NULL,
     rudn_id TEXT NOT NULL
 )

@@ -382,3 +382,7 @@ function saveJson() {
 	selectedObject = oldSelectedObject;
 	return jsonData;
 }
+
+function load_from_json(s) {
+	restoreFromStruct(JSON.parse(s));
+}

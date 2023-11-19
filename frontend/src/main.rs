@@ -1,4 +1,5 @@
 mod canvas;
+mod editor;
 mod profile;
 mod task;
 mod task_list;
@@ -10,7 +11,7 @@ use yew_bootstrap::icons::*;
 use yew_router::prelude::Link;
 use yew_router::prelude::*;
 
-use crate::canvas::Canvas;
+use crate::editor::Editor;
 use crate::profile::Profile;
 use crate::profile::ProfileNav;
 use crate::task::TaskPage;
@@ -22,6 +23,10 @@ enum Route {
     Home,
     #[at("/profile")]
     Profile,
+
+    #[at("/editor")]
+    Editor,
+
     #[at("/task/:group_slug/:task_slug")]
     Task {
         group_slug: AttrValue,
@@ -57,6 +62,7 @@ fn App() -> Html {
         match route {
             Route::Home => html!(<Home/>),
             Route::Profile => html!(<Profile />),
+            Route::Editor => html!(<Editor />),
             Route::Task {
                 group_slug,
                 task_slug,
@@ -70,10 +76,11 @@ fn App() -> Html {
             {BIFiles::cdn()}
             <nav class="navbar bg-body-tertiary">
                 <div class="container-fluid">
-                    <Link<Route> classes="navbar-brand" to={Route::Home}>{"FSM Editor"}</Link<Route>>
-                    <ul class="navbar-nav">
-                        <ProfileNav />
-                    </ul>
+                    <Link<Route> classes="navbar-brand" to={Route::Home}>{"RUDN FSM"}</Link<Route>>
+                    <div class="nav-item">
+                        <Link<Route> classes="nav-link" to={Route::Editor}>{"Editor"}</Link<Route>>
+                    </div>
+                    <ProfileNav />
                 </div>
             </nav>
             <Container>

@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use api::{SmallTaskInfo, TaskGroupInfo, TaskInfo};
+use api::{
+    SmallTaskInfo, SubmissionVerdict, TaskGroupInfo, TaskInfo, UserTaskSubmission,
+    UserTaskSubmissions,
+};
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -21,6 +24,7 @@ pub async fn get_taskgroups(
             id: v.id,
             name: v.title,
             slug: v.slug,
+            legend: v.legend,
             tasks: vec![],
         })
         .collect();
@@ -56,6 +60,7 @@ pub async fn get_taskgroup(
             id: v.id,
             name: v.title,
             slug: v.slug,
+            legend: v.legend,
             tasks: vec![],
         });
 
@@ -90,9 +95,79 @@ pub async fn get_task(
                 name: t.title,
                 slug: t.slug,
                 legend: t.legend,
-                testgen_script: t.testgen_script,
-                testchk_script: t.testchk_script,
+                script: t.script,
             })),
+        ))
+    } else {
+        Ok((StatusCode::NOT_FOUND, Json(None)))
+    }
+}
+
+pub async fn get_task_and_userdata(
+    State(AppState { db }): State<AppState>,
+    Path((_group_slug, task_slug, user_token)): Path<(String, String, String)>,
+) -> Result<(StatusCode, Json<Option<(TaskInfo, UserTaskSubmissions)>>), AppError> {
+    let user_id = match sqlx::query!("SELECT * FROM account WHERE user_token=?", user_token)
+        .fetch_optional(&db)
+        .await?
+    {
+        Some(v) => Some(v.id),
+        None => None,
+    };
+
+    let task = sqlx::query!("SELECT * FROM task WHERE slug=?", task_slug)
+        .fetch_optional(&db)
+        .await?;
+
+    if let Some(t) = task {
+        // Collect the user's submissions, if there is a user.
+        let submissions = match user_id {
+            Some(uid) => {
+                let submissions: Vec<UserTaskSubmission> = sqlx::query!(
+                    "SELECT * FROM user_submission WHERE task_id=? AND user_id=?",
+                    t.id,
+                    uid
+                )
+                .fetch_all(&db)
+                .await?
+                .iter()
+                .map(|v| UserTaskSubmission {
+                    id: v.id,
+                    task_id: v.task_id,
+                    when_unix_time: v.when_unix_time as u64,
+                    solution: serde_json::from_str(&v.solution_json)
+                        .expect("Invalid solution JSON found in database?"),
+                    verdict: serde_json::from_str(&v.verdict_json)
+                        .expect("Invalid verdict JSON found in database?"),
+                })
+                .collect();
+
+                let latest_submission =
+                    submissions.iter().max_by_key(|v| v.when_unix_time).cloned();
+                let latest_ok_submission = submissions
+                    .iter()
+                    .filter(|v| matches!(v.verdict, SubmissionVerdict::Ok(_)))
+                    .max_by_key(|v| v.when_unix_time)
+                    .cloned();
+                UserTaskSubmissions {
+                    latest_submission,
+                    latest_ok_submission,
+                    submissions,
+                }
+            }
+            None => UserTaskSubmissions::default(),
+        };
+        Ok((
+            StatusCode::OK,
+            Json(Some((
+                TaskInfo {
+                    name: t.title,
+                    slug: t.slug,
+                    legend: t.legend,
+                    script: t.script,
+                },
+                submissions,
+            ))),
         ))
     } else {
         Ok((StatusCode::NOT_FOUND, Json(None)))
