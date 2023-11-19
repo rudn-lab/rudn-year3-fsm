@@ -18,17 +18,69 @@ use crate::Route;
 
 #[function_component(Profile)]
 pub fn profile() -> Html {
-    let profile_key = gloo::storage::LocalStorage::get("token");
-    let profile_key: Option<String> = match profile_key {
+    let profile_token = gloo::storage::LocalStorage::get("token");
+    let profile_token: Option<String> = match profile_token {
         Ok(key) => key,
         Err(_) => None,
     };
 
-    if let Some(_key) = profile_key {
-        html!()
+    if let Some(token) = profile_token {
+        let fallback = html! {
+            <h1>{"Loading profile details..."}<Spinner /></h1>
+        };
+        html!(
+            <Suspense {fallback}>
+                <ProfileInner token={token} />
+            </Suspense>
+
+        )
     } else {
         html!(<Register />)
     }
+}
+
+#[function_component(ProfileInner)]
+fn profile_inner(props: &ProfileNavInnerProps) -> HtmlResult {
+    let navigator = use_navigator().unwrap();
+    let ProfileNavInnerProps { token } = props;
+    let token = token.clone();
+
+    let resp = use_future(|| async move {
+        reqwest::get(format!("https://fsm-api.rudn-lab.ru/user-info/{token}"))
+            .await?
+            .json::<UserInfoResult>()
+            .await
+    })?;
+
+    let result_html = match *resp {
+        Ok(ref res) => match res {
+            UserInfoResult::Ok(UserInfo {
+                name,
+                rudn_id,
+                token,
+            }) => html! {
+                <>
+                    <h1>{name}</h1>
+                    <h2>{"RUDN ID: "}{rudn_id}</h2>
+
+                    <p>{"Token for logging in on other devices: "}<code>{token}</code></p>
+                </>
+            },
+            UserInfoResult::NoSuchToken => {
+                navigator.push(&Route::Profile);
+                gloo::storage::LocalStorage::delete("token");
+                gloo::utils::document()
+                    .location()
+                    .unwrap()
+                    .reload()
+                    .unwrap();
+                html!({ "User does not exist" })
+            }
+        },
+        Err(ref failure) => html!(<>{"Error loading your profile: "}{failure.to_string()}</>),
+    };
+
+    Ok(result_html)
 }
 
 #[function_component(ProfileNav)]
@@ -85,7 +137,15 @@ fn profile_nav_inner(props: &ProfileNavInnerProps) -> HtmlResult {
             }
             UserInfoResult::NoSuchToken => {
                 navigator.push(&Route::Profile);
-                "User could not be loaded".to_string()
+                gloo::storage::LocalStorage::delete("token");
+
+                gloo::utils::document()
+                    .location()
+                    .unwrap()
+                    .reload()
+                    .unwrap();
+
+                "User does not exist".to_string()
             }
         },
         Err(ref failure) => failure.to_string(),
@@ -98,6 +158,9 @@ fn profile_nav_inner(props: &ProfileNavInnerProps) -> HtmlResult {
 fn register() -> Html {
     html!(
         <div>
+            <div class="alert alert-warning attention">
+                {"You need to register or login to continue"}
+            </div>
             <Row>
                 <Column>
                     <NewRegister />
@@ -169,6 +232,11 @@ fn new_register() -> Html {
         let UserInfo { token, .. } = data;
         gloo::storage::LocalStorage::set("token", token.clone()).unwrap();
         navigator.push(&Route::Home);
+        gloo::utils::document()
+            .location()
+            .unwrap()
+            .reload()
+            .unwrap();
     }
 
     html!(
@@ -240,6 +308,11 @@ fn existing_register() -> Html {
         if let UserInfoResult::Ok(UserInfo { token, .. }) = data {
             gloo::storage::LocalStorage::set("token", token.clone()).unwrap();
             navigator.push(&Route::Home);
+            gloo::utils::document()
+                .location()
+                .unwrap()
+                .reload()
+                .unwrap();
         }
     }
 

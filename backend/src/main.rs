@@ -1,5 +1,6 @@
 #![feature(try_trait_v2)]
 mod result;
+mod task;
 mod user_token;
 
 use axum::{
@@ -36,6 +37,9 @@ pub async fn main() -> anyhow::Result<()> {
         .route("/", get(root))
         .route("/user-info", post(user_token::create_user))
         .route("/user-info/:token", get(user_token::get_user))
+        .route("/tasks", get(task::get_taskgroups))
+        .route("/tasks/:group", get(task::get_taskgroup))
+        .route("/tasks/:group/:task", get(task::get_task))
         .layer(
             tower_http::cors::CorsLayer::new()
                 .allow_methods(Any)
@@ -57,6 +61,9 @@ async fn root() -> &'static str {
     concat!(
         "Options:\n",
         "GET /user-info/:token -- get user info\n",
-        "POST /user-info -- register and get new user's info\n"
+        "POST /user-info -- register and get new user's info\n",
+        "GET /tasks -- get list of task groups\n",
+        "GET /tasks/:group -- get list of tasks in a group\n",
+        "GET /tasks/:group/:task -- get info about task\n"
     )
 }

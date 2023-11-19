@@ -1,5 +1,7 @@
 mod canvas;
 mod profile;
+mod task;
+mod task_list;
 
 use gloo::storage::Storage;
 use yew::prelude::*;
@@ -11,6 +13,8 @@ use yew_router::prelude::*;
 use crate::canvas::Canvas;
 use crate::profile::Profile;
 use crate::profile::ProfileNav;
+use crate::task::TaskPage;
+use crate::task_list::HomeTaskList;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
@@ -18,6 +22,12 @@ enum Route {
     Home,
     #[at("/profile")]
     Profile,
+    #[at("/task/:group_slug/:task_slug")]
+    Task {
+        group_slug: AttrValue,
+        task_slug: AttrValue,
+    },
+
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -37,7 +47,7 @@ fn Home() -> Html {
     }
 
     html! {
-        <Canvas />
+        <HomeTaskList />
     }
 }
 
@@ -47,7 +57,11 @@ fn App() -> Html {
         match route {
             Route::Home => html!(<Home/>),
             Route::Profile => html!(<Profile />),
-            Route::NotFound => todo!(),
+            Route::Task {
+                group_slug,
+                task_slug,
+            } => html!(<TaskPage {group_slug} {task_slug}/>),
+            Route::NotFound => html!("route not found"),
         }
     }
 
