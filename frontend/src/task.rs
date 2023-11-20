@@ -1,5 +1,10 @@
 use api::{TaskInfo, UserTaskSubmissions};
-use fsm::{fsm::StateMachine, tester::FSMTester};
+use fsm::{
+    fsm::{FSMOutput, StateMachine},
+    tester::FSMTester,
+};
+use rand::{Rng, SeedableRng};
+use rand_chacha::ChaCha8Rng;
 use shadow_clone::shadow_clone;
 use yew::{prelude::*, suspense::use_future};
 use yew_autoprops::autoprops_component;
@@ -65,23 +70,112 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
 
     let set_fsm = {
         shadow_clone!(current_fsm);
-        move |fsm| {
-            current_fsm.set(fsm);
+        move |fsm: StateMachine| {
+            current_fsm.set(fsm.clone());
         }
     };
+
+    let examples = use_state(|| html!());
 
     let result_html = match *resp {
         Ok(ref res) => {
             let (task, submissions) = res.clone();
+
             let onselect = {
                 shadow_clone!(init_fsm);
                 move |fsm| {
                     init_fsm.set(fsm);
                 }
             };
+
+            let make_examples = {
+                let script = task.script.clone();
+                shadow_clone!(current_fsm, init_fsm, local_test_outcome, examples);
+                move |ev: MouseEvent| {
+                    log::info!("Starting local test generate!");
+                    let fsm = (&*current_fsm).clone();
+                    init_fsm.set(fsm.clone());
+
+                    log::debug!("Instantiating tester");
+                    let tester = FSMTester::new(fsm, script.clone());
+                    let mut tester = match tester {
+                        Ok(t) => t,
+                        Err(why) => {
+                            local_test_outcome.set(html!(<span class="text-danger">{"BUG IN TASK (please report this!): "}{why}</span>));
+                            return;
+                        }
+                    };
+                    log::debug!("Instantiating seed");
+                    let mut seed = [0u8; 32];
+                    for v in seed.iter_mut() {
+                        *v = (randfloat() * 256.0) as u8;
+                    }
+                    let mut rng = ChaCha8Rng::from_seed(seed);
+                    let mut tests_acc = Vec::with_capacity(3);
+                    let mut tests_rej = Vec::with_capacity(3);
+                    for _ in 0..3 {
+                        let test = tester.make_test_case(rng.gen(), true);
+                        let test = match test {
+                            Ok(t) => t,
+                            Err(why) => {
+                                local_test_outcome.set(html!(<span class="text-danger">{"BUG IN TASK (please report this!): "}{why}</span>));
+                                return;
+                            }
+                        };
+                        match test.1 {
+                            FSMOutput::Accept => tests_acc.push(test.0),
+                            FSMOutput::Reject => tests_rej.push(test.0),
+                        }
+
+                        let test = tester.make_test_case(rng.gen(), false);
+                        let test = match test {
+                            Ok(t) => t,
+                            Err(why) => {
+                                local_test_outcome.set(html!(<span class="text-danger">{"BUG IN TASK (please report this!): "}{why}</span>));
+                                return;
+                            }
+                        };
+                        match test.1 {
+                            FSMOutput::Accept => tests_acc.push(test.0),
+                            FSMOutput::Reject => tests_rej.push(test.0),
+                        }
+                    }
+                    let rows = tests_acc
+                        .iter()
+                        .zip(tests_rej.iter())
+                        .map(|(a, b)| {
+                            html! {
+                                <tr>
+                                    <td>
+                                        <div class="text-success overflow-scroll">{a}</div>
+                                    </td>
+                                    <td>
+                                        <div class="text-danger overflow-scroll">{b}</div>
+                                    </td>
+                                </tr>
+                            }
+                        })
+                        .collect::<Html>();
+
+                    examples.set(html!(
+                        <table class="table overflow-scroll">
+                            <thead>
+                                <tr>
+                                    <th scope="col">{"These words are Accepted"}</th>
+                                    <th scope="col">{"These words are Rejected"}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows}
+                            </tbody>
+                        </table>
+                    ))
+                }
+            };
+
             let run_local_test = {
                 let script = task.script.clone();
-                shadow_clone!(current_fsm, init_fsm, local_test_outcome);
+                shadow_clone!(current_fsm, init_fsm, local_test_outcome, examples);
                 move |ev: MouseEvent| {
                     log::info!("Starting local evaluation!");
                     ev.prevent_default();
@@ -115,11 +209,28 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                                 fsm::tester::FSMTestingOutput::WrongAnswer {
                                     successes,
                                     total_tests,
-                                    ..
-                                } => local_test_outcome.set(html!(<span class="text-warning">{"WRONG: only "}{successes}{"/"}{total_tests}{" passed"}</span>)),
+                                    first_failure_seed,
+                                    first_failure_expected_result,
+                                } => {
+                                    local_test_outcome.set(html!(<span class="text-warning">{"WRONG: only "}{successes}{"/"}{total_tests}{" passed"}</span>));
+                                    let word_to_test = match tester.make_test_case(first_failure_seed, first_failure_expected_result.into()) {
+                                        Ok(t) => t,
+                                        Err(why) => {
+                                            local_test_outcome.set(html!(<span class="text-danger">{"BUG IN TASK (please report this!): "}{why}</span>));
+                                            return;
+                                        }
+                                    };
+                                    let word = match word_to_test.1{
+                                        FSMOutput::Accept => html!(<span class="text-success">{word_to_test.0}</span>),
+                                        FSMOutput::Reject => html!(<span class="text-danger">{word_to_test.0}</span>),
+                                    };
+                                    examples.set(html!(
+                                        <p>{"Your solution fails for word: "}{word}</p>
+                                    ));
+                            },
                                 fsm::tester::FSMTestingOutput::FSMInvalid(why) => local_test_outcome.set(html!(<span class="text-warning">{"INVALID: "}{why}</span>)),
                             }
-                        },
+                        }
                     }
                 }
             };
@@ -129,19 +240,27 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                 <p>{task.legend}</p>
                 <Row>
                     <Column>
-                        <Canvas onchange={set_fsm} init={(&*init_fsm).clone()} />
-                    </Column>
-                    <Column>
+                        <div>
                         <div class="btn-group" role="group">
                             <button type="button" class="btn btn-outline-primary" onclick={run_local_test}>{"Test locally"}</button>
                             <button type="button" class="btn btn-outline-success">{"Send and test on server"}</button>
                         </div>
-                        <div>
-                            {(&*local_test_outcome).clone()}
-                        </div>
-                        <SubmissionList {submissions} {onselect} />
-                    </Column>
 
+                        </div>
+                        <div>
+                            <Canvas onchange={set_fsm} init={(&*init_fsm).clone()} />
+                        </div>
+                        <div>
+                            <div>
+                                {(&*examples).clone()}
+                                <button type="button" class="btn btn-outline-primary" onclick={make_examples}>{"Examples?"}</button>
+                            </div>
+                            <div>
+                                {(&*local_test_outcome).clone()}
+                            </div>
+                            <SubmissionList {submissions} {onselect} />
+                        </div>
+                    </Column>
                 </Row>
                 </>
             }

@@ -4,7 +4,7 @@ use rhai::{Engine, Scope, AST};
 use crate::fsm::{FSMError, FSMOutput, StateMachine};
 
 pub struct FSMTester<'a> {
-    fsm: StateMachine,
+    pub fsm: StateMachine,
     engine: Engine,
     ast: AST,
     scope: Scope<'a>,
@@ -49,7 +49,7 @@ struct RhaiRng {
 impl RhaiRng {
     pub fn new(seed: i64) -> Self {
         Self {
-            inner: rand_chacha::ChaCha8Rng::from_seed(expand_seed(seed))
+            inner: rand_chacha::ChaCha8Rng::from_seed(expand_seed(seed)),
         }
     }
 
@@ -72,9 +72,15 @@ impl<'a> FSMTester<'a> {
         })
     }
 
-    fn check_script_api(engine: &mut Engine, ast: &AST, scope: &mut Scope<'a>) -> anyhow::Result<()> {
+    fn check_script_api(
+        engine: &mut Engine,
+        ast: &AST,
+        scope: &mut Scope<'a>,
+    ) -> anyhow::Result<()> {
         let rng = RhaiRng::new(0);
-        engine.register_type_with_name::<RhaiRng>("RhaiRng").register_fn("gen_range", RhaiRng::gen_range);
+        engine
+            .register_type_with_name::<RhaiRng>("RhaiRng")
+            .register_fn("gen_range", RhaiRng::gen_range);
         scope.push("rng", rng);
         log::debug!("Testing accept case: generating word");
         let accept_test = engine.call_fn::<String>(scope, ast, "gen_word", (true,))?; // Generate a test that needs to be accepted.
@@ -107,6 +113,7 @@ impl<'a> FSMTester<'a> {
     pub fn run_testing(&mut self, init_random_seed: i64) -> anyhow::Result<FSMTestingOutput> {
         let mut test_seed_rng = rand_chacha::ChaCha8Rng::from_seed(expand_seed(init_random_seed));
         let mut first_fail_seed = None;
+        let mut first_fail_seed_true_outcome = None;
         let mut successes = 0;
 
         // If the FSM is obviously invalid, bail.
@@ -130,6 +137,7 @@ impl<'a> FSMTester<'a> {
                     } else {
                         if first_fail_seed.is_none() {
                             first_fail_seed = Some(test_seed);
+                            first_fail_seed_true_outcome = Some(true_answer)
                         }
                     }
                 }
@@ -143,8 +151,37 @@ impl<'a> FSMTester<'a> {
                 successes,
                 total_tests: Self::TESTS,
                 first_failure_seed: first_fail_seed.unwrap(),
+                first_failure_expected_result: first_fail_seed_true_outcome.unwrap(),
             })
         }
+    }
+
+    pub fn make_test_case(
+        &mut self,
+        seed: i64,
+        goal_output: bool,
+    ) -> Result<(String, FSMOutput), anyhow::Error> {
+        let test_rng = RhaiRng::new(seed);
+        self.scope.clear();
+        self.scope.push("rng", test_rng);
+
+        let test_case = self.engine.call_fn::<String>(
+            &mut self.scope,
+            &self.ast,
+            "gen_word",
+            (goal_output,),
+        )?;
+        let true_output = self.engine.call_fn::<bool>(
+            &mut self.scope,
+            &self.ast,
+            "check_word",
+            (test_case.clone(),),
+        )?;
+        let true_output = match true_output {
+            true => FSMOutput::Accept,
+            false => FSMOutput::Reject,
+        };
+        Ok((test_case, true_output))
     }
 
     /// Check the FSM against a single generated test.
@@ -157,26 +194,7 @@ impl<'a> FSMTester<'a> {
         &mut self,
         seed: i64,
     ) -> Result<(String, Result<(FSMOutput, FSMOutput), FSMError>), anyhow::Error> {
-        let test_rng = RhaiRng::new(seed);
-        self.scope.clear();
-        self.scope.push("rng", test_rng);
-
-        let test_case = self.engine.call_fn::<String>(
-            &mut self.scope,
-            &self.ast,
-            "gen_word",
-            (seed % 2 == 0,),
-        )?;
-        let true_output = self.engine.call_fn::<bool>(
-            &mut self.scope,
-            &self.ast,
-            "check_word",
-            (test_case.clone(),),
-        )?;
-        let true_output = match true_output {
-            true => FSMOutput::Accept,
-            false => FSMOutput::Reject,
-        };
+        let (test_case, true_output) = self.make_test_case(seed, seed % 2 == 0)?;
 
         let fsm_output = self.fsm.evaluate_unchecked(&test_case);
         match fsm_output {
@@ -196,6 +214,7 @@ pub enum FSMTestingOutput {
         successes: usize,
         total_tests: usize,
         first_failure_seed: i64,
+        first_failure_expected_result: FSMOutput,
     },
 
     /// FSM is invalid

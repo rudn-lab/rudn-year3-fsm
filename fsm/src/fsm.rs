@@ -107,6 +107,15 @@ pub enum FSMOutput {
     Reject,
 }
 
+impl From<FSMOutput> for bool {
+    fn from(value: FSMOutput) -> Self {
+        match value {
+            FSMOutput::Accept => true,
+            FSMOutput::Reject => false,
+        }
+    }
+}
+
 impl StateMachine {
     pub fn evaluate(&self, word: &str) -> Result<FSMOutput, FSMError> {
         if let Some(err) = self.check_error() {
