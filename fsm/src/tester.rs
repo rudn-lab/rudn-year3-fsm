@@ -17,9 +17,9 @@ fn expand_seed(init: i64) -> [u8; 32] {
     output.try_into().unwrap()
 }
 
-fn contract_seed(init: [u8; 32]) -> i64 {
-    i64::from_be_bytes(init[24..32].try_into().unwrap())
-}
+// fn contract_seed(init: [u8; 32]) -> i64 {
+//     i64::from_be_bytes(init[24..32].try_into().unwrap())
+// }
 
 // #[cfg(test)]
 // mod test_seed {
@@ -59,9 +59,9 @@ impl RhaiRng {
 }
 
 impl<'a> FSMTester<'a> {
-    pub fn new(fsm: StateMachine, script: String) -> anyhow::Result<Self> {
+    pub fn new(fsm: StateMachine, script: &str) -> anyhow::Result<Self> {
         let mut engine = Engine::new();
-        let ast = engine.compile(&script)?;
+        let ast = engine.compile(script)?;
         let mut scope = Scope::new();
         Self::check_script_api(&mut engine, &ast, &mut scope)?;
         Ok(Self {
@@ -104,7 +104,7 @@ impl<'a> FSMTester<'a> {
         Ok(())
     }
 
-    const TESTS: usize = 100;
+    const TESTS: usize = 250;
 
     /// Check the FSM against a generated battery of tests.
     ///

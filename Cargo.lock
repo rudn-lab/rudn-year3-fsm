@@ -153,6 +153,7 @@ dependencies = [
  "api",
  "axum",
  "dotenvy",
+ "fsm",
  "rand",
  "serde_json",
  "sqlx",

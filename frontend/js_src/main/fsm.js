@@ -384,5 +384,7 @@ function saveJson() {
 }
 
 function load_from_json(s) {
+	selectedObject = null;
 	restoreFromStruct(JSON.parse(s));
+	draw();
 }

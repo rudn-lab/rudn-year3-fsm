@@ -1,4 +1,5 @@
 mod result;
+pub mod submit;
 mod task;
 mod user_token;
 
@@ -41,7 +42,7 @@ pub async fn main() -> anyhow::Result<()> {
         .route("/tasks/:group/:task", get(task::get_task))
         .route(
             "/tasks/:group/:task/:token",
-            get(task::get_task_and_userdata),
+            get(task::get_task_and_userdata).post(submit::submit_task),
         )
         .layer(
             tower_http::cors::CorsLayer::new()

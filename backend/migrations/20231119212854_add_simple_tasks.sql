@@ -1,13 +1,16 @@
 -- Add migration script here
-INSERT INTO task_group (id, title, slug, legend) VALUES (1, "Simple tasks", "simple", "These tasks are a simple showcase of the features of the service");
+INSERT INTO task_group (id, title, slug, legend) VALUES (1, "Простые задачи", "simple", "Эти задачи служат для проверки возможностей тестирующей системы");
 
 INSERT INTO task (id, group_id, slug, title, legend, script, model_solution_json) VALUES (1,
 1,
 "only-ones",
-"Only 1s",
-"Create a FSM that accepts any word consisting of any number of 1s. Any other word, including the empty word, must be rejected.",
+"Только единицы",
+"Создайте автомат, который принимает слова, состоящие из любого количества единиц. Любое другое слово, включая пустое слово, следует не принимать.",
 'fn gen_word(ok) {
-    let length = rng.gen_range(0, 50);
+    if rng.gen_range(0, 10) < 1 == 0 {
+        return "";
+    }
+    let length = rng.gen_range(1, 25);
     let word = "";
     if ok {
         for i in 0..length {

@@ -124,7 +124,7 @@ pub async fn get_task_and_userdata(
         let submissions = match user_id {
             Some(uid) => {
                 let submissions: Vec<UserTaskSubmission> = sqlx::query!(
-                    "SELECT * FROM user_submission WHERE task_id=? AND user_id=?",
+                    "SELECT * FROM user_submission WHERE task_id=? AND user_id=? ORDER BY when_unix_time DESC",
                     t.id,
                     uid
                 )
@@ -134,7 +134,7 @@ pub async fn get_task_and_userdata(
                 .map(|v| UserTaskSubmission {
                     id: v.id,
                     task_id: v.task_id,
-                    when_unix_time: v.when_unix_time as u64,
+                    when_unix_time: v.when_unix_time,
                     solution: serde_json::from_str(&v.solution_json)
                         .expect("Invalid solution JSON found in database?"),
                     verdict: serde_json::from_str(&v.verdict_json)

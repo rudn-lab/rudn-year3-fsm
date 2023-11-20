@@ -1,4 +1,4 @@
-use api::{TaskInfo, UserTaskSubmissions};
+use api::{TaskInfo, UserTaskSubmission, UserTaskSubmissions};
 use fsm::{
     fsm::{FSMOutput, StateMachine},
     tester::FSMTester,
@@ -12,7 +12,7 @@ use yew_bootstrap::{
     component::{Column, Row, Spinner},
     icons::BI,
 };
-use yew_hooks::use_local_storage;
+use yew_hooks::{use_async, use_interval, use_local_storage};
 
 use crate::canvas::Canvas;
 
@@ -52,52 +52,111 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
 
     let token = use_local_storage::<String>("token".to_string());
 
-    let resp = use_future(|| async move {
-        reqwest::get(format!(
-            "https://fsm-api.rudn-lab.ru/tasks/{group_slug}/{task_slug}/{}",
-            token.as_ref().unwrap_or(&"".to_string())
-        ))
-        .await?
-        .error_for_status()?
-        .json::<(TaskInfo, UserTaskSubmissions)>()
-        .await
-    })?;
+    let resp = {
+        shadow_clone!(token, group_slug, task_slug);
+        use_future(|| async move {
+            reqwest::get(format!(
+                "https://fsm-api.rudn-lab.ru/tasks/{group_slug}/{task_slug}/{}",
+                token.as_ref().unwrap_or(&"".to_string())
+            ))
+            .await?
+            .error_for_status()?
+            .json::<(TaskInfo, UserTaskSubmissions)>()
+            .await
+        })?
+    };
 
     let current_fsm = use_state(StateMachine::default);
-    let init_fsm = use_state(StateMachine::default);
+    let fsm_to_load = use_state(|| None);
 
     let local_test_outcome = use_state(|| html!());
 
     let set_fsm = {
         shadow_clone!(current_fsm);
         move |fsm: StateMachine| {
+            // log::info!("Received current FSM: {fsm:?}");
             current_fsm.set(fsm.clone());
+        }
+    };
+
+    let send_to_server_async: yew_hooks::prelude::UseAsyncHandle<UserTaskSubmission, String> = {
+        shadow_clone!(current_fsm, fsm_to_load, token);
+        use_async(async move {
+            let fsm = (&*current_fsm).clone();
+            fsm_to_load.set(Some(fsm.clone()));
+            Ok(reqwest::Client::new()
+                .post(format!(
+                    "https://fsm-api.rudn-lab.ru/tasks/{group_slug}/{task_slug}/{}",
+                    token.as_ref().unwrap_or(&"".to_string())
+                ))
+                .json(&fsm)
+                .send()
+                .await
+                .map_err(|v| v.to_string())?
+                .json::<UserTaskSubmission>()
+                .await
+                .map_err(|v| v.to_string())?)
+        })
+    };
+
+    let send_to_server = {
+        shadow_clone!(send_to_server_async);
+        move |ev: MouseEvent| {
+            ev.prevent_default();
+            send_to_server_async.run()
         }
     };
 
     let examples = use_state(|| html!());
 
+    if fsm_to_load.as_ref() == Some(&*current_fsm) {
+        log::debug!("FSM successfully set, clearing fsm_to_set");
+        fsm_to_load.set(None);
+    } else {
+        // log::debug!("FSM not propagated yet");
+    }
+
     let result_html = match *resp {
         Ok(ref res) => {
             let (task, submissions) = res.clone();
 
+            let send_to_server_button = if send_to_server_async.loading {
+                html!(<button type="button" class="btn btn-outline-success" disabled={true}>{"Send and test on server"}<Spinner small={true} /></button>)
+            } else if let Some(data) = &send_to_server_async.data {
+                log::info!("Submission result: {data:?}");
+                gloo::utils::document()
+                    .location()
+                    .unwrap()
+                    .reload()
+                    .unwrap();
+                html!("Waiting for page reload...")
+            } else if let Some(error) = &send_to_server_async.error {
+                html!(<>
+                    <p class="text-danger">{"Error while sending: "}{error}</p>
+                    <button type="button" class="btn btn-outline-success" onclick={send_to_server}>{"Send and test on server"}</button>
+                    </>)
+            } else {
+                html!(<button type="button" class="btn btn-outline-success" onclick={send_to_server}>{"Send and test on server"}</button>)
+            };
+
             let onselect = {
-                shadow_clone!(init_fsm);
+                shadow_clone!(fsm_to_load);
                 move |fsm| {
-                    init_fsm.set(fsm);
+                    fsm_to_load.set(Some(fsm));
                 }
             };
 
             let make_examples = {
                 let script = task.script.clone();
-                shadow_clone!(current_fsm, init_fsm, local_test_outcome, examples);
+                shadow_clone!(current_fsm, fsm_to_load, local_test_outcome, examples);
                 move |ev: MouseEvent| {
+                    ev.prevent_default();
                     log::info!("Starting local test generate!");
                     let fsm = (&*current_fsm).clone();
-                    init_fsm.set(fsm.clone());
+                    fsm_to_load.set(Some(fsm.clone()));
 
                     log::debug!("Instantiating tester");
-                    let tester = FSMTester::new(fsm, script.clone());
+                    let tester = FSMTester::new(fsm, &script);
                     let mut tester = match tester {
                         Ok(t) => t,
                         Err(why) => {
@@ -113,7 +172,7 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                     let mut rng = ChaCha8Rng::from_seed(seed);
                     let mut tests_acc = Vec::with_capacity(3);
                     let mut tests_rej = Vec::with_capacity(3);
-                    for _ in 0..3 {
+                    while !(tests_acc.len() >= 3 && tests_rej.len() >= 3) {
                         let test = tester.make_test_case(rng.gen(), true);
                         let test = match test {
                             Ok(t) => t,
@@ -140,6 +199,7 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                             FSMOutput::Reject => tests_rej.push(test.0),
                         }
                     }
+                    log::debug!("Generated tests: ACC={tests_acc:?}, REJ={tests_rej:?}");
                     let rows = tests_acc
                         .iter()
                         .zip(tests_rej.iter())
@@ -147,10 +207,10 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                             html! {
                                 <tr>
                                     <td>
-                                        <div class="text-success overflow-scroll">{a}</div>
+                                        <WordDisplay word={a.clone()} response={FSMOutput::Accept} />
                                     </td>
                                     <td>
-                                        <div class="text-danger overflow-scroll">{b}</div>
+                                        <WordDisplay word={b.clone()} response={FSMOutput::Reject} />
                                     </td>
                                 </tr>
                             }
@@ -175,14 +235,14 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
 
             let run_local_test = {
                 let script = task.script.clone();
-                shadow_clone!(current_fsm, init_fsm, local_test_outcome, examples);
+                shadow_clone!(current_fsm, fsm_to_load, local_test_outcome, examples);
                 move |ev: MouseEvent| {
                     log::info!("Starting local evaluation!");
                     ev.prevent_default();
                     let fsm = (&*current_fsm).clone();
-                    init_fsm.set(fsm.clone());
+                    fsm_to_load.set(Some(fsm.clone()));
                     log::debug!("Instantiating tester");
-                    let tester = FSMTester::new(fsm, script.clone());
+                    let tester = FSMTester::new(fsm, &script);
                     let mut tester = match tester {
                         Ok(t) => t,
                         Err(why) => {
@@ -220,12 +280,8 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                                             return;
                                         }
                                     };
-                                    let word = match word_to_test.1{
-                                        FSMOutput::Accept => html!(<span class="text-success">{word_to_test.0}</span>),
-                                        FSMOutput::Reject => html!(<span class="text-danger">{word_to_test.0}</span>),
-                                    };
                                     examples.set(html!(
-                                        <p>{"Your solution fails for word: "}{word}</p>
+                                        <p>{"Your solution fails for word: "}<WordDisplay word={word_to_test.0} response={word_to_test.1} /></p>
                                     ));
                             },
                                 fsm::tester::FSMTestingOutput::FSMInvalid(why) => local_test_outcome.set(html!(<span class="text-warning">{"INVALID: "}{why}</span>)),
@@ -243,12 +299,12 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                         <div>
                         <div class="btn-group" role="group">
                             <button type="button" class="btn btn-outline-primary" onclick={run_local_test}>{"Test locally"}</button>
-                            <button type="button" class="btn btn-outline-success">{"Send and test on server"}</button>
+                            {send_to_server_button}
                         </div>
 
                         </div>
                         <div>
-                            <Canvas onchange={set_fsm} init={(&*init_fsm).clone()} />
+                            <Canvas onchange={set_fsm} init={(&*fsm_to_load).clone()} />
                         </div>
                         <div>
                             <div>
@@ -273,13 +329,39 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
     Ok(result_html)
 }
 
+#[autoprops_component(WordDisplay)]
+fn word_display(word: &AttrValue, response: &FSMOutput) -> Html {
+    match response {
+        FSMOutput::Accept => {
+            if word.as_str().is_empty() {
+                html!(<span class="badge text-bg-success">{"λ"}</span>)
+            } else {
+                html!(<span class="text-success">{word}</span>)
+            }
+        }
+        FSMOutput::Reject => {
+            if word.as_str().is_empty() {
+                html!(<span class="badge text-bg-danger">{"λ"}</span>)
+            } else {
+                html!(<span class="text-danger">{word}</span>)
+            }
+        }
+    }
+}
+
 #[wasm_bindgen::prelude::wasm_bindgen]
 extern "C" {
-    fn unix_time_to_locale_string(time: u64) -> String;
+    fn unix_time_to_locale_string(time: f64) -> String;
+    fn prepare_popovers();
 }
 
 #[autoprops_component(SubmissionList)]
 fn submissions_list(submissions: &UserTaskSubmissions, onselect: &Callback<StateMachine>) -> Html {
+    let force = use_force_update();
+    use_interval(move || force.force_update(), 1000);
+
+    prepare_popovers();
+
     let submission_list = submissions
         .submissions
         .iter()
@@ -293,12 +375,12 @@ fn submissions_list(submissions: &UserTaskSubmissions, onselect: &Callback<State
 
             let verdict = match &v.verdict {
                 api::SubmissionVerdict::Ok(tests) => html!(
-                    <span class="d-inline-block text-success" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("OK: passed all {tests} tests")}>
+                    <span class="d-inline-block text-success fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("OK: passed all {tests} tests")}>
                         {BI::CHECK_CIRCLE_FILL}
                     </span>
                 ),
                 api::SubmissionVerdict::WrongAnswer { total_tests, successes, .. } => html!(
-                    <span class="d-inline-block text-warning" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("WRONG: passed only {successes} out of {total_tests} tests")}>
+                    <span class="d-inline-block text-warning fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("WRONG: passed only {successes} out of {total_tests} tests")}>
                         {BI::EXCLAMATION_TRIANGLE_FILL}
                     </span>
                 ),
@@ -309,12 +391,12 @@ fn submissions_list(submissions: &UserTaskSubmissions, onselect: &Callback<State
                         fsm::fsm::FSMError::DisjointedLink(_) => "There is a link that refers to nodes that don't exist",
                     };
                     html!(
-                    <span class="d-inline-block text-danger" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("INVALID: {why}")}>
+                    <span class="d-inline-block text-danger fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("INVALID: {why}")}>
                         {BI::SHIELD_FILL_X}
                     </span>
                 )},
                 api::SubmissionVerdict::TaskInternalError(why) => html!(
-                    <span class="d-inline-block text-info" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("Error in task: {why}. Please contact jury!")}>
+                    <span class="d-inline-block text-info fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("Error in task: {why}. Please contact jury!")}>
                         {BI::BUG_FILL}
                     </span>
                 ),
@@ -323,7 +405,7 @@ fn submissions_list(submissions: &UserTaskSubmissions, onselect: &Callback<State
             html!(
                 <tr>
                     <th scope="row">{v.id}</th>
-                    <td>{unix_time_to_locale_string(v.when_unix_time)}
+                    <td>{unix_time_to_locale_string(v.when_unix_time as f64)}
                     {if Some(v) == submissions.latest_ok_submission.as_ref() {" (latest OK)"} else if Some(v) == submissions.latest_submission.as_ref() {" (latest)"} else {""}}
                     </td>
                     <td><button class="btn btn-link" onclick={load_this}>{v.solution.nodes.len()}{" nodes, "}{v.solution.links.len()}{" links"}</button></td>

@@ -1,4 +1,4 @@
-use fsm::fsm::{FSMError, StateMachine};
+use fsm::fsm::{FSMError, FSMOutput, StateMachine};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -54,7 +54,7 @@ pub struct UserTaskSubmissions {
 pub struct UserTaskSubmission {
     pub id: i64,
     pub task_id: i64,
-    pub when_unix_time: u64,
+    pub when_unix_time: i64,
     pub solution: StateMachine,
     pub verdict: SubmissionVerdict,
 }
@@ -67,7 +67,8 @@ pub enum SubmissionVerdict {
     WrongAnswer {
         total_tests: usize,
         successes: usize,
-        first_fail_test_seed: u64,
+        first_failure_seed: i64,
+        first_failure_expected_result: FSMOutput,
     },
 
     /// The state machine is invalid

@@ -32,7 +32,7 @@
 
 		<script>
 			function unix_time_to_locale_string(time) {
-				var d = new Date(time);
+				var d = new Date(time * 1000);
 				const opts = {
   					weekday: 'short',
 					year: 'numeric',
@@ -43,11 +43,22 @@
 					second: '2-digit',
 				};
 
-				return d.toLocaleDateString(undefined, options);
+				return d.toLocaleDateString(undefined, opts);
 			}
 
 			function randfloat() {
 				return Math.random();
+			}
+
+			function prepare_popovers() {
+				const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+				popoverTriggerList.forEach(element => {
+					if (element.dataset.popover_created) {}
+					else {
+						new bootstrap.Popover(element);
+						element.dataset.popover_created = true;
+					}
+				});
 			}
 		</script>
 	</head>

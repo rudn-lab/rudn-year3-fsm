@@ -1,4 +1,5 @@
 use fsm::fsm::StateMachine;
+use shadow_clone::shadow_clone;
 use wasm_bindgen::prelude::*;
 use web_sys::Element;
 use yew::prelude::*;
@@ -17,7 +18,7 @@ pub struct CanvasProps {
     pub onchange: Callback<StateMachine>,
 
     #[prop_or_default]
-    pub init: StateMachine,
+    pub init: Option<StateMachine>,
 }
 
 #[function_component(Canvas)]
@@ -35,9 +36,16 @@ pub fn canvas(props: &CanvasProps) -> Html {
         });
     }
 
-    use_effect_with(init.clone(), |machine| {
-        load_from_json(serde_json::to_string(machine).unwrap());
-    });
+    {
+        shadow_clone!(onchange);
+        use_effect_with(init.clone(), move |machine| {
+            if let Some(ref machine) = machine {
+                log::debug!("Canvas: loading from FSM: {machine:?}");
+                load_from_json(serde_json::to_string(machine).unwrap());
+                onchange.emit(machine.clone());
+            }
+        });
+    }
 
     let text = fetch_json();
     let sm: StateMachine = serde_json::from_str(&text).expect("JS code produced invalid JSON?");

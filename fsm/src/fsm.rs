@@ -101,7 +101,7 @@ pub enum FSMError {
     DisjointedLink((usize, usize)),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum FSMOutput {
     Accept,
     Reject,
