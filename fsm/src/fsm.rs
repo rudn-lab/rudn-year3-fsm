@@ -72,8 +72,8 @@ impl Link {
                 end_node,
                 ..
             } => (Some(*start_node), *end_node),
-            Link::StartLink { node, .. } => (Some(*node), *node),
-            Link::SelfLink { node, .. } => (None, *node),
+            Link::StartLink { node, .. } => (None, *node),
+            Link::SelfLink { node, .. } => (Some(*node), *node),
         }
     }
 
@@ -108,11 +108,94 @@ pub enum FSMOutput {
 }
 
 impl StateMachine {
-    pub fn evaluate(&self, word: String) -> Result<FSMOutput, FSMError> {
+    pub fn evaluate(&self, word: &str) -> Result<FSMOutput, FSMError> {
         if let Some(err) = self.check_error() {
             return Err(err);
         }
-        todo!()
+        self.evaluate_unchecked(word)
+    }
+
+    pub fn evaluate_unchecked(&self, word: &str) -> Result<FSMOutput, FSMError> {
+        #[derive(Debug)]
+        struct Cursor<'a> {
+            remaining_word: &'a str,
+            node_idx: usize,
+        }
+        let mut cursors = vec![];
+        let start_links: Vec<_> = self
+            .links
+            .iter()
+            .filter(|v| matches!(v, Link::StartLink { .. }))
+            .collect();
+        if start_links.is_empty() {
+            return Err(FSMError::NoEntryLinks);
+        }
+
+        for link in start_links {
+            if let Some(after_prefix) = word.strip_prefix(link.get_text()) {
+                cursors.push(Cursor {
+                    remaining_word: after_prefix,
+                    node_idx: link.get_nodes().1,
+                });
+            }
+        }
+
+        // TODO: better termination criteria
+        let mut deadline = 100_0usize;
+
+        loop {
+            if deadline == 0 {
+                log::error!("Runtime check failed: too many steps needed for FSM");
+                log::error!("FSM: {self:?}");
+                return Err(FSMError::InfiniteLoop);
+            }
+            deadline -= 1;
+
+            let mut new_cursors = vec![];
+
+            for Cursor {
+                remaining_word,
+                node_idx,
+            } in cursors.iter()
+            {
+                for link in self
+                    .links
+                    .iter()
+                    .filter(|v| v.get_nodes().0 == Some(*node_idx))
+                {
+                    log::debug!("Cursor is at {remaining_word:?} at {node_idx}: link {link:?}");
+                    if let Some(after_prefix) = remaining_word.strip_prefix(link.get_text()) {
+                        log::debug!("After prefix: {after_prefix:?}");
+                        new_cursors.push(Cursor {
+                            remaining_word: after_prefix,
+                            node_idx: link.get_nodes().1,
+                        })
+                    }
+                }
+            }
+
+            cursors.clear();
+            cursors.extend(new_cursors.into_iter());
+            log::debug!("{cursors:?}");
+
+            // If there are cursors with empty words, check if they're at accepting nodes.
+            // If they are, the machine accepts.
+            for cursor in cursors.iter() {
+                if cursor.remaining_word.is_empty() {
+                    if self.nodes[cursor.node_idx].accept_state {
+                        return Ok(FSMOutput::Accept);
+                    }
+                }
+            }
+
+            // Remove all cursors with empty words that ended up on non-accepting nodes.
+            cursors.retain(|v| !v.remaining_word.is_empty());
+
+            // If there are no cursors left, the machine rejects.
+            if cursors.is_empty() {
+                return Ok(FSMOutput::Reject);
+            }
+        }
     }
 
     pub fn check_error(&self) -> Option<FSMError> {
@@ -120,8 +203,9 @@ impl StateMachine {
         let has_entry_links = self
             .links
             .iter()
-            .any(|l| matches!(l, Link::SelfLink { .. }));
+            .any(|l| matches!(l, Link::StartLink { .. }));
         if !has_entry_links {
+            log::info!("Pre-check failed: FSM has no start link");
             return Some(FSMError::NoEntryLinks);
         }
 
@@ -129,9 +213,11 @@ impl StateMachine {
         for (i, l) in self.links.iter().enumerate() {
             let (a, b) = l.get_nodes();
             if b >= self.nodes.len() {
+                log::info!("Pre-check failed: FSM has link to node {b}, which does not exist");
                 return Some(FSMError::DisjointedLink((i, b)));
             }
             if a.is_some_and(|a| a >= self.nodes.len()) {
+                log::info!("Pre-check failed: FSM has link from node {a:?}, which does not exist");
                 return Some(FSMError::DisjointedLink((i, a.unwrap())));
             }
         }
@@ -139,8 +225,13 @@ impl StateMachine {
         // Check for infinite loops
         // Build a graph from only the links that have zero length.
         let mut graph = Graph::new();
-        let nodes: Vec<_> = self.nodes.iter().map(|v| graph.add_node(())).collect();
-        for link in self.links.iter().filter(|v| !v.get_text().is_empty()) {
+        let nodes: Vec<_> = self.nodes.iter().map(|_v| graph.add_node(())).collect();
+        for link in self
+            .links
+            .iter()
+            .filter(|v| v.get_text().is_empty())
+            .filter(|v| !matches!(v, Link::StartLink { .. }))
+        {
             let (a, b) = link.get_nodes();
             let a = if let Some(v) = a {
                 v
@@ -151,6 +242,8 @@ impl StateMachine {
         }
         // If that graph is cyclic, then we have an infinite loop
         if petgraph::algo::is_cyclic_directed(&graph) {
+            log::info!("Pre-check failed: FSM has loop made out of zero-length links");
+            log::debug!("Graph: {graph:?}");
             return Some(FSMError::InfiniteLoop);
         }
 

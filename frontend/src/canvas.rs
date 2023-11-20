@@ -14,10 +14,10 @@ extern "C" {
 #[derive(Properties, PartialEq, Clone)]
 pub struct CanvasProps {
     #[prop_or_default]
-    onchange: Callback<StateMachine>,
+    pub onchange: Callback<StateMachine>,
 
     #[prop_or_default]
-    init: StateMachine,
+    pub init: StateMachine,
 }
 
 #[function_component(Canvas)]
@@ -50,7 +50,6 @@ pub fn canvas(props: &CanvasProps) -> Html {
         <>
             <canvas ref={canvas_ref} width="800" height="600" style="max-width: 800px; background: black; border-radius: 20px; margin: 10px auto; border: 1px white solid;">
             </canvas>
-            <p>{text}</p>
         </>
     )
 }

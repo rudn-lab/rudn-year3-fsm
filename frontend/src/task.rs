@@ -1,5 +1,5 @@
 use api::{TaskInfo, UserTaskSubmissions};
-use fsm::fsm::StateMachine;
+use fsm::{fsm::StateMachine, tester::FSMTester};
 use shadow_clone::shadow_clone;
 use yew::{prelude::*, suspense::use_future};
 use yew_autoprops::autoprops_component;
@@ -33,6 +33,11 @@ pub fn task_page(props: &TaskPageProps) -> Html {
     )
 }
 
+#[wasm_bindgen::prelude::wasm_bindgen]
+extern "C" {
+    fn randfloat() -> f64;
+}
+
 #[function_component(TaskPageInner)]
 fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
     let TaskPageProps {
@@ -53,19 +58,77 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
         .await
     })?;
 
+    let current_fsm = use_state(StateMachine::default);
+    let init_fsm = use_state(StateMachine::default);
+
+    let local_test_outcome = use_state(|| html!());
+
+    let set_fsm = {
+        shadow_clone!(current_fsm);
+        move |fsm| {
+            current_fsm.set(fsm);
+        }
+    };
+
     let result_html = match *resp {
         Ok(ref res) => {
             let (task, submissions) = res.clone();
-            let onselect = |v| {};
+            let onselect = {
+                shadow_clone!(init_fsm);
+                move |fsm| {
+                    init_fsm.set(fsm);
+                }
+            };
+            let run_local_test = {
+                let script = task.script.clone();
+                shadow_clone!(current_fsm, init_fsm, local_test_outcome);
+                move |ev: MouseEvent| {
+                    ev.prevent_default();
+                    let fsm = (&*current_fsm).clone();
+                    init_fsm.set(fsm.clone());
+                    let tester = FSMTester::new(fsm, script.clone());
+                    let mut tester = match tester {
+                        Ok(t) => t,
+                        Err(why) => {
+                            local_test_outcome.set(html!(<span class="text-danger">{"BUG IN TASK (please report this!): "}{why}</span>));
+                            return;
+                        }
+                    };
+                    let mut seed = [0u8; 8];
+                    for v in seed.iter_mut() {
+                        *v = (randfloat() * 256.0) as u8;
+                    }
+                    let seed = i64::from_be_bytes(seed);
+                    match tester.run_testing(seed) {
+                        Err(why) => {
+                            local_test_outcome.set(html!(<span class="text-danger">{"BUG IN TASK (please report this!): "}{why}</span>));
+                            return;
+                        }
+                        Ok(res) => match res {
+                            fsm::tester::FSMTestingOutput::Ok(t) => local_test_outcome.set(html!(<span class="text-success">{"OK: all "}{t}{" tests passed"}</span>)),
+                            fsm::tester::FSMTestingOutput::WrongAnswer {
+                                successes,
+                                total_tests,
+                                ..
+                            } => local_test_outcome.set(html!(<span class="text-warning">{"WRONG: only "}{successes}{"/"}{total_tests}{" passed"}</span>)),
+                            fsm::tester::FSMTestingOutput::FSMInvalid(why) => local_test_outcome.set(html!(<span class="text-warning">{"INVALID: "}{why}</span>)),
+                        },
+                    }
+                }
+            };
             html! {
                 <>
                 <h1>{task.name}</h1>
                 <p>{task.legend}</p>
                 <Row>
                     <Column>
-                        <Canvas />
+                        <Canvas onchange={set_fsm} init={(&*init_fsm).clone()} />
                     </Column>
                     <Column>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-primary" onclick={run_local_test}>{"Test locally"}</button>
+                            <button type="button" class="btn btn-outline-success">{"Send and test on server"}</button>
+                        </div>
                         <SubmissionList {submissions} {onselect} />
                     </Column>
 
