@@ -83,9 +83,11 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                 let script = task.script.clone();
                 shadow_clone!(current_fsm, init_fsm, local_test_outcome);
                 move |ev: MouseEvent| {
+                    log::info!("Starting local evaluation!");
                     ev.prevent_default();
                     let fsm = (&*current_fsm).clone();
                     init_fsm.set(fsm.clone());
+                    log::debug!("Instantiating tester");
                     let tester = FSMTester::new(fsm, script.clone());
                     let mut tester = match tester {
                         Ok(t) => t,
@@ -94,24 +96,29 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                             return;
                         }
                     };
+                    log::debug!("Instantiating seed");
                     let mut seed = [0u8; 8];
                     for v in seed.iter_mut() {
                         *v = (randfloat() * 256.0) as u8;
                     }
                     let seed = i64::from_be_bytes(seed);
+                    log::debug!("Running tester");
                     match tester.run_testing(seed) {
                         Err(why) => {
                             local_test_outcome.set(html!(<span class="text-danger">{"BUG IN TASK (please report this!): "}{why}</span>));
                             return;
                         }
-                        Ok(res) => match res {
-                            fsm::tester::FSMTestingOutput::Ok(t) => local_test_outcome.set(html!(<span class="text-success">{"OK: all "}{t}{" tests passed"}</span>)),
-                            fsm::tester::FSMTestingOutput::WrongAnswer {
-                                successes,
-                                total_tests,
-                                ..
-                            } => local_test_outcome.set(html!(<span class="text-warning">{"WRONG: only "}{successes}{"/"}{total_tests}{" passed"}</span>)),
-                            fsm::tester::FSMTestingOutput::FSMInvalid(why) => local_test_outcome.set(html!(<span class="text-warning">{"INVALID: "}{why}</span>)),
+                        Ok(res) => {
+                            log::debug!("Tester result: {res:?}");
+                            match res {
+                                fsm::tester::FSMTestingOutput::Ok(t) => local_test_outcome.set(html!(<span class="text-success">{"OK: all "}{t}{" tests passed"}</span>)),
+                                fsm::tester::FSMTestingOutput::WrongAnswer {
+                                    successes,
+                                    total_tests,
+                                    ..
+                                } => local_test_outcome.set(html!(<span class="text-warning">{"WRONG: only "}{successes}{"/"}{total_tests}{" passed"}</span>)),
+                                fsm::tester::FSMTestingOutput::FSMInvalid(why) => local_test_outcome.set(html!(<span class="text-warning">{"INVALID: "}{why}</span>)),
+                            }
                         },
                     }
                 }
@@ -128,6 +135,9 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                         <div class="btn-group" role="group">
                             <button type="button" class="btn btn-outline-primary" onclick={run_local_test}>{"Test locally"}</button>
                             <button type="button" class="btn btn-outline-success">{"Send and test on server"}</button>
+                        </div>
+                        <div>
+                            {(&*local_test_outcome).clone()}
                         </div>
                         <SubmissionList {submissions} {onselect} />
                     </Column>

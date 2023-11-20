@@ -526,6 +526,7 @@ dependencies = [
  "api",
  "fsm",
  "gloo 0.10.0",
+ "log",
  "reqwest",
  "serde_json",
  "shadow-clone",

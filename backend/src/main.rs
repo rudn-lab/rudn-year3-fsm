@@ -1,4 +1,3 @@
-#![feature(try_trait_v2)]
 mod result;
 mod task;
 mod user_token;

@@ -6,8 +6,8 @@ INSERT INTO task (id, group_id, slug, title, legend, script, model_solution_json
 "only-ones",
 "Only 1s",
 "Create a FSM that accepts any word consisting of any number of 1s. Any other word, including the empty word, must be rejected.",
-'fn gen_word(r, ok) {
-    let length = call(r, 0, 50);
+'fn gen_word(ok) {
+    let length = rng.gen_range(0, 50);
     let word = "";
     if ok {
         for i in 0..length {
@@ -15,7 +15,7 @@ INSERT INTO task (id, group_id, slug, title, legend, script, model_solution_json
         }
     } else {
         for i in 0..length {
-            word += call(r, 0, 1);
+            word += rng.gen_range(0, 1);
         }
     }
     
@@ -25,12 +25,12 @@ INSERT INTO task (id, group_id, slug, title, legend, script, model_solution_json
     return word;
 }
 
-fn check_word(w) {
+fn check_word(word) {
     if word.is_empty() {
         return false;
     }
     while !word.is_empty() {
-        if w.pop() != "1" {
+        if word.pop() != "1" {
             return false;
         }
     }

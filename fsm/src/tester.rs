@@ -41,12 +41,29 @@ fn contract_seed(init: [u8; 32]) -> i64 {
 //     }
 // }
 
+#[derive(Clone)]
+struct RhaiRng {
+    inner: rand_chacha::ChaCha8Rng,
+}
+
+impl RhaiRng {
+    pub fn new(seed: i64) -> Self {
+        Self {
+            inner: rand_chacha::ChaCha8Rng::from_seed(expand_seed(seed))
+        }
+    }
+
+    pub fn gen_range(&mut self, a: i64, b: i64) -> i64 {
+        self.inner.gen_range(a..=b)
+    }
+}
+
 impl<'a> FSMTester<'a> {
     pub fn new(fsm: StateMachine, script: String) -> anyhow::Result<Self> {
-        let engine = Engine::new();
+        let mut engine = Engine::new();
         let ast = engine.compile(&script)?;
         let mut scope = Scope::new();
-        Self::check_script_api(&engine, &ast, &mut scope)?;
+        Self::check_script_api(&mut engine, &ast, &mut scope)?;
         Ok(Self {
             fsm,
             engine,
@@ -55,18 +72,24 @@ impl<'a> FSMTester<'a> {
         })
     }
 
-    fn check_script_api(engine: &Engine, ast: &AST, scope: &mut Scope<'a>) -> anyhow::Result<()> {
-        let mut rng = rand_chacha::ChaCha8Rng::from_seed([0; 32]);
-        let gen_range = move |a: i32, b: i32| rng.gen_range(a..=b);
-        let accept_test = engine.call_fn::<String>(scope, ast, "gen_word", (gen_range, true))?; // Generate a test that needs to be accepted.
+    fn check_script_api(engine: &mut Engine, ast: &AST, scope: &mut Scope<'a>) -> anyhow::Result<()> {
+        let rng = RhaiRng::new(0);
+        engine.register_type_with_name::<RhaiRng>("RhaiRng").register_fn("gen_range", RhaiRng::gen_range);
+        scope.push("rng", rng);
+        log::debug!("Testing accept case: generating word");
+        let accept_test = engine.call_fn::<String>(scope, ast, "gen_word", (true,))?; // Generate a test that needs to be accepted.
+        log::debug!("Testing accept case: verifying accept");
         let is_accept = engine.call_fn::<bool>(scope, ast, "check_word", (accept_test.clone(),))?;
         if !is_accept {
             anyhow::bail!("gen_word(true) returned {accept_test}, but check_word says False");
         }
 
-        let mut rng = rand_chacha::ChaCha8Rng::from_seed([0; 32]);
-        let gen_range = move |a: i32, b: i32| rng.gen_range(a..=b);
-        let reject_test = engine.call_fn::<String>(scope, ast, "gen_word", (gen_range, false))?; // Generate a test that needs to be rejected.
+        let rng = RhaiRng::new(0);
+        scope.clear();
+        scope.push("rng", rng);
+        log::debug!("Testing reject case: generating word");
+        let reject_test = engine.call_fn::<String>(scope, ast, "gen_word", (false,))?; // Generate a test that needs to be rejected.
+        log::debug!("Testing reject case: verifying reject");
         let is_accept = engine.call_fn::<bool>(scope, ast, "check_word", (reject_test.clone(),))?;
         if is_accept {
             anyhow::bail!("gen_word(false) returned {accept_test}, but check_word says True");
@@ -134,13 +157,15 @@ impl<'a> FSMTester<'a> {
         &mut self,
         seed: i64,
     ) -> Result<(String, Result<(FSMOutput, FSMOutput), FSMError>), anyhow::Error> {
-        let mut test_rng = rand_chacha::ChaCha8Rng::from_seed(expand_seed(seed));
-        let gen_range = move |a: i32, b: i32| test_rng.gen_range(a..=b);
+        let test_rng = RhaiRng::new(seed);
+        self.scope.clear();
+        self.scope.push("rng", test_rng);
+
         let test_case = self.engine.call_fn::<String>(
             &mut self.scope,
             &self.ast,
             "gen_word",
-            (gen_range, seed % 2 == 0),
+            (seed % 2 == 0,),
         )?;
         let true_output = self.engine.call_fn::<bool>(
             &mut self.scope,
@@ -161,6 +186,7 @@ impl<'a> FSMTester<'a> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum FSMTestingOutput {
     /// FSM is okay, by agreement of N tests
     Ok(usize),
