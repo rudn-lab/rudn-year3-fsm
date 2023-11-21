@@ -61,7 +61,7 @@ jobs:
         uses: actions/configure-pages@v2
 
       - name: Build
-        run: trunk build
+        run: trunk build --release
         working-directory: ./frontend
 
       - name: Upload artifact
