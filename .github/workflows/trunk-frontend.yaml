@@ -66,10 +66,9 @@ jobs:
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
-        working-directory: ./app
         with:
           # Upload "dist" directory
-          path: 'dist'
+          path: 'frontend/dist'
 
 
   # Deployment job
