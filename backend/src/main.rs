@@ -44,6 +44,10 @@ pub async fn main() -> anyhow::Result<()> {
             "/tasks/:group/:task/:token",
             get(task::get_task_and_userdata).post(submit::submit_task),
         )
+        .route(
+            "/tasks/:group/:task/:token/success",
+            get(task::get_task_success),
+        )
         .layer(
             tower_http::cors::CorsLayer::new()
                 .allow_methods(Any)

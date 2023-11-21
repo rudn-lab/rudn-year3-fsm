@@ -173,3 +173,38 @@ pub async fn get_task_and_userdata(
         Ok((StatusCode::NOT_FOUND, Json(None)))
     }
 }
+
+pub async fn get_task_success(
+    State(AppState { db }): State<AppState>,
+    Path((_group_slug, task_slug, user_token)): Path<(String, String, String)>,
+) -> Result<(StatusCode, Json<bool>), AppError> {
+    let user_id = match sqlx::query!("SELECT * FROM account WHERE user_token=?", user_token)
+        .fetch_optional(&db)
+        .await?
+    {
+        Some(v) => Some(v.id),
+        None => None,
+    };
+
+    let task = sqlx::query!("SELECT * FROM task WHERE slug=?", task_slug)
+        .fetch_optional(&db)
+        .await?;
+
+    if let Some(t) = task {
+        // Collect the user's submissions, if there is a user.
+        let success = match user_id {
+            Some(uid) => sqlx::query!(
+                "SELECT * FROM user_submission WHERE task_id=? AND user_id=? AND is_success=1",
+                t.id,
+                uid
+            )
+            .fetch_optional(&db)
+            .await?
+            .is_some(),
+            None => false,
+        };
+        Ok((StatusCode::OK, Json(success)))
+    } else {
+        Ok((StatusCode::NOT_FOUND, Json(false)))
+    }
+}
