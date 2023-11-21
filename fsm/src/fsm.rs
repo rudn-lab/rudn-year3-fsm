@@ -172,8 +172,8 @@ impl StateMachine {
                 }
             }
 
-            // Remove all cursors with empty words that ended up on non-accepting nodes.
-            cursors.retain(|v| !v.remaining_word.is_empty());
+            // // Remove all cursors with empty words that ended up on non-accepting nodes.
+            // cursors.retain(|v| !v.remaining_word.is_empty());
 
             // If there are no cursors left, the machine rejects.
             if cursors.is_empty() {
