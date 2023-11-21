@@ -1,0 +1,15 @@
+version: "3.3"
+services:
+ web:
+  build: .
+  expose: ["5001"]
+  restart: unless-stopped
+  environment:
+   - DATABASE_URL=/db/db.sqlite
+  volumes:
+   - ./live-db:/db
+  labels:
+   - "traefik.enable=true"
+   - "traefik.http.routers.fsm-backend.rule=Host(`fsm-api.rudn-lab.ru`)"
+   - "traefik.http.routers.fsm-backend.entrypoints=websecure"
+   - "traefik.http.routers.fsm-backend.tls.certresolver=myresolver"

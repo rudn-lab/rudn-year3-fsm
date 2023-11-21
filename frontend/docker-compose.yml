@@ -1,0 +1,11 @@
+version: "3.3"
+services:
+ frontend:
+  build: .
+  expose: ["80"]
+  restart: unless-stopped
+  labels:
+   - "traefik.enable=true"
+   - "traefik.http.routers.fsm-frontend.rule=Host(`fsm.rudn-lab.ru`)"
+   - "traefik.http.routers.fsm-frontend.entrypoints=websecure"
+   - "traefik.http.routers.fsm-frontend.tls.certresolver=myresolver"

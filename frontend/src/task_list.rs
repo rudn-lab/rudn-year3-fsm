@@ -38,7 +38,7 @@ fn profile_nav_inner() -> HtmlResult {
                 .collect::<Html>();
             html! {
                 <>
-                    <h1>{res.len()} {" групп заданий"}</h1>
+                    <h1>{"Количество групп задач: "}{res.len()}</h1>
                     <div class="row row-cols-3">
                         {task_grps}
                     </div>

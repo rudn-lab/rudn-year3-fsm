@@ -121,7 +121,7 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
             let (task, submissions) = res.clone();
 
             let send_to_server_button = if send_to_server_async.loading {
-                html!(<button type="button" class="btn btn-outline-success" disabled={true}>{"Отправить и тестировать на сервере"}<Spinner small={true} /></button>)
+                html!(<button type="button" class="btn btn-outline-success" disabled={true}>{"Сохранить и сдать задание"}<Spinner small={true} /></button>)
             } else if let Some(data) = &send_to_server_async.data {
                 log::info!("Submission result: {data:?}");
                 gloo::utils::document()
@@ -133,10 +133,10 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
             } else if let Some(error) = &send_to_server_async.error {
                 html!(<>
                     <p class="text-danger">{"Ошибка при отправке: "}{error}</p>
-                    <button type="button" class="btn btn-outline-success" onclick={send_to_server}>{"Отправить и тестировать на сервере"}</button>
+                    <button type="button" class="btn btn-outline-success" onclick={send_to_server}>{"Сохранить и сдать задание"}</button>
                     </>)
             } else {
-                html!(<button type="button" class="btn btn-outline-success" onclick={send_to_server}>{"Отправить и тестировать на сервере"}</button>)
+                html!(<button type="button" class="btn btn-outline-success" onclick={send_to_server}>{"Сохранить и сдать задание"}</button>)
             };
 
             let onselect = {
@@ -294,8 +294,6 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                 <>
                 <h1>{task.name}</h1>
                 <p>{task.legend}</p>
-                <Row>
-                    <Column>
                         <div>
                         <div class="btn-group" role="group">
                             <button type="button" class="btn btn-outline-primary" onclick={run_local_test}>{"Тестировать локально"}</button>
@@ -303,9 +301,22 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                         </div>
 
                         </div>
-                        <div>
-                            <Canvas onchange={set_fsm} init={(&*fsm_to_load).clone()} />
-                        </div>
+                        <Row>
+                            <Column>
+                                <Canvas onchange={set_fsm} init={(&*fsm_to_load).clone()} />
+                            </Column>
+                            <Column>
+                                <ul>
+                                    <li>{"Создать кружочек: двойной клик по пустому пространству"}</li>
+                                    <li>{"Создать стрелочку: нажать Shift, щелкнуть по начальному кружочку и передвинуть до целевого кружочка"}</li>
+                                    <li>{"Создать начальную стрелочку: нажать Shift, щелкнуть по пустому месту и передвинуть до кружочка"}</li>
+                                    <li>{"Передвинуть что-то: щелкнуть и тянуть"}</li>
+                                    <li>{"Удалить что-то: щелкнуть, затем нажать Delete"}</li>
+                                    <li>{"Сделать кружочек принимающим: дважды щелкнуть по нему"}</li>
+                                    <li>{"Текст на стрелочках - условие для перехода между состояниями"}</li>
+                                </ul>
+                            </Column>
+                        </Row>
                         <div>
                             <div>
                                 {(&*examples).clone()}
@@ -316,8 +327,6 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                             </div>
                             <SubmissionList {submissions} {onselect} />
                         </div>
-                    </Column>
-                </Row>
                 </>
             }
         }
@@ -334,14 +343,14 @@ fn word_display(word: &AttrValue, response: &FSMOutput) -> Html {
     match response {
         FSMOutput::Accept => {
             if word.as_str().is_empty() {
-                html!(<span class="badge text-bg-success">{"λ"}</span>)
+                html!(<span class="badge text-bg-success">{"ε"}</span>)
             } else {
                 html!(<span class="text-success">{word}</span>)
             }
         }
         FSMOutput::Reject => {
             if word.as_str().is_empty() {
-                html!(<span class="badge text-bg-danger">{"λ"}</span>)
+                html!(<span class="badge text-bg-danger">{"ε"}</span>)
             } else {
                 html!(<span class="text-danger">{word}</span>)
             }

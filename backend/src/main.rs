@@ -61,7 +61,7 @@ pub async fn main() -> anyhow::Result<()> {
         )
         .with_state(app_state);
 
-    axum::Server::bind(&"0.0.0.0:5000".parse().unwrap())
+    axum::Server::bind(&"0.0.0.0:5001".parse().unwrap())
         .serve(app.into_make_service())
         .await
         .unwrap();
