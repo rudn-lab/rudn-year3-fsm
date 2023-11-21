@@ -56,7 +56,7 @@ pub async fn main() -> anyhow::Result<()> {
             tower_http::cors::CorsLayer::new()
                 .allow_methods(Any)
                 .allow_origin("https://fsm.rudn-lab.ru".parse::<HeaderValue>().unwrap())
-                .allow_origin("http://127.0.0.1:8080".parse::<HeaderValue>().unwrap())
+                //.allow_origin("http://127.0.0.1:8080".parse::<HeaderValue>().unwrap())
                 .allow_headers(Any),
         )
         .with_state(app_state);
