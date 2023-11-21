@@ -225,9 +225,13 @@ impl StateMachine {
                 log::info!("Pre-check failed: FSM has link to node {b}, which does not exist");
                 return Some(FSMError::DisjointedLink((i, b)));
             }
-            if a.is_some_and(|a| a >= self.nodes.len()) {
-                log::info!("Pre-check failed: FSM has link from node {a:?}, which does not exist");
-                return Some(FSMError::DisjointedLink((i, a.unwrap())));
+            if let Some(a) = a {
+                if a >= self.nodes.len() {
+                    log::info!(
+                        "Pre-check failed: FSM has link from node {a:?}, which does not exist"
+                    );
+                    return Some(FSMError::DisjointedLink((i, a)));
+                }
             }
         }
 
