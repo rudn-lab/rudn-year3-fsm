@@ -1,5 +1,6 @@
 mod canvas;
 mod editor;
+mod leaderboard;
 mod profile;
 mod scripter;
 mod task;
@@ -13,6 +14,7 @@ use yew_router::prelude::Link;
 use yew_router::prelude::*;
 
 use crate::editor::Editor;
+use crate::leaderboard::Leaderboard;
 use crate::profile::Profile;
 use crate::profile::ProfileNav;
 use crate::scripter::Scripter;
@@ -31,6 +33,9 @@ enum Route {
 
     #[at("/scripter")]
     Scripter,
+
+    #[at("/leaderboard/:group_slug")]
+    Leaderboard { group_slug: AttrValue },
 
     #[at("/task/:group_slug/:task_slug")]
     Task {
@@ -69,6 +74,7 @@ fn App() -> Html {
             Route::Profile => html!(<Profile />),
             Route::Editor => html!(<Editor />),
             Route::Scripter => html!(<Scripter />),
+            Route::Leaderboard { group_slug } => html!(<Leaderboard {group_slug} />),
             Route::Task {
                 group_slug,
                 task_slug,

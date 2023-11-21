@@ -39,6 +39,10 @@ pub async fn main() -> anyhow::Result<()> {
         .route("/user-info/:token", get(user_token::get_user))
         .route("/tasks", get(task::get_taskgroups))
         .route("/tasks/:group", get(task::get_taskgroup))
+        .route(
+            "/tasks/:group/leaderboard",
+            get(task::get_taskgroup_leaderboard),
+        )
         .route("/tasks/:group/:task", get(task::get_task))
         .route(
             "/tasks/:group/:task/:token",

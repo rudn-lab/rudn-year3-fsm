@@ -1,4 +1,4 @@
-use api::{TaskInfo, UserTaskSubmission, UserTaskSubmissions};
+use api::{SubmissionVerdict, TaskInfo, UserTaskSubmission, UserTaskSubmissions};
 use fsm::{
     fsm::{FSMOutput, StateMachine},
     tester::FSMTester,
@@ -351,8 +351,49 @@ fn word_display(word: &AttrValue, response: &FSMOutput) -> Html {
 
 #[wasm_bindgen::prelude::wasm_bindgen]
 extern "C" {
-    fn unix_time_to_locale_string(time: f64) -> String;
-    fn prepare_popovers();
+    pub fn unix_time_to_locale_string(time: f64) -> String;
+    pub fn prepare_popovers();
+}
+
+#[autoprops_component(VerdictDisplay)]
+pub fn verdict_display(verdict: &SubmissionVerdict) -> Html {
+    match verdict {
+        api::SubmissionVerdict::Ok(tests) => html!(
+            <span class="d-inline-block text-success fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("OK: прошли все {tests} тестов")}>
+                {BI::CHECK_CIRCLE_FILL}
+            </span>
+        ),
+        api::SubmissionVerdict::WrongAnswer {
+            total_tests,
+            successes,
+            ..
+        } => html!(
+            <span class="d-inline-block text-warning fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("НЕВЕРНО: прошли только {successes} из {total_tests} тестов")}>
+                {BI::EXCLAMATION_TRIANGLE_FILL}
+            </span>
+        ),
+        api::SubmissionVerdict::InvalidFSM(err) => {
+            let why = match err {
+                fsm::fsm::FSMError::InfiniteLoop => {
+                    "Есть цикл из пустых связей, который никогда не завершится"
+                }
+                fsm::fsm::FSMError::NoEntryLinks => "Нет вводных стрелочек в конечный автомат",
+                fsm::fsm::FSMError::DisjointedLink(_) => {
+                    "Есть стрелочка, которая связана с несуществующим кружочком"
+                }
+            };
+            html!(
+                <span class="d-inline-block text-danger fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("НЕВЕРНЫЙ ФОРМАТ: {why}")}>
+                    {BI::SHIELD_FILL_X}
+                </span>
+            )
+        }
+        api::SubmissionVerdict::TaskInternalError(why) => html!(
+            <span class="d-inline-block text-info fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("Error in task: {why}. Please contact jury!")}>
+                {BI::BUG_FILL}
+            </span>
+        ),
+    }
 }
 
 #[autoprops_component(SubmissionList)]
@@ -373,34 +414,6 @@ fn submissions_list(submissions: &UserTaskSubmissions, onselect: &Callback<State
                 onselect.emit(machine.clone());
             };
 
-            let verdict = match &v.verdict {
-                api::SubmissionVerdict::Ok(tests) => html!(
-                    <span class="d-inline-block text-success fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("OK: прошли все {tests} тестов")}>
-                        {BI::CHECK_CIRCLE_FILL}
-                    </span>
-                ),
-                api::SubmissionVerdict::WrongAnswer { total_tests, successes, .. } => html!(
-                    <span class="d-inline-block text-warning fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("НЕВЕРНО: прошли только {successes} из {total_tests} тестов")}>
-                        {BI::EXCLAMATION_TRIANGLE_FILL}
-                    </span>
-                ),
-                api::SubmissionVerdict::InvalidFSM(err) => {
-                    let why = match err {
-                        fsm::fsm::FSMError::InfiniteLoop => "Есть цикл из пустых связей, который никогда не завершится",
-                        fsm::fsm::FSMError::NoEntryLinks => "Нет вводных стрелочек в конечный автомат",
-                        fsm::fsm::FSMError::DisjointedLink(_) => "Есть стрелочка, которая связана с несуществующим кружочком",
-                    };
-                    html!(
-                    <span class="d-inline-block text-danger fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("НЕВЕРНЫЙ ФОРМАТ: {why}")}>
-                        {BI::SHIELD_FILL_X}
-                    </span>
-                )},
-                api::SubmissionVerdict::TaskInternalError(why) => html!(
-                    <span class="d-inline-block text-info fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("Error in task: {why}. Please contact jury!")}>
-                        {BI::BUG_FILL}
-                    </span>
-                ),
-            };
 
             html!(
                 <tr>
@@ -408,8 +421,8 @@ fn submissions_list(submissions: &UserTaskSubmissions, onselect: &Callback<State
                     <td>{unix_time_to_locale_string(v.when_unix_time as f64)}
                     {if Some(v) == submissions.latest_ok_submission.as_ref() {" (latest OK)"} else if Some(v) == submissions.latest_submission.as_ref() {" (latest)"} else {""}}
                     </td>
-                    <td><button class="btn btn-link" onclick={load_this}>{v.solution.nodes.len()}{" nodes, "}{v.solution.links.len()}{" links"}</button></td>
-                    <td>{verdict}</td>
+                    <td><button class="btn btn-link" onclick={load_this}>{v.solution.nodes.len()}{" кружочков, "}{v.solution.links.len()}{" стрелочек"}</button></td>
+                    <td><VerdictDisplay verdict={v.verdict.clone()} /></td>
                 </tr>
             )
         })

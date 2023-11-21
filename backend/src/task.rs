@@ -1,14 +1,15 @@
 use std::collections::HashMap;
 
 use api::{
-    SmallTaskInfo, SubmissionVerdict, TaskGroupInfo, TaskInfo, UserTaskSubmission,
-    UserTaskSubmissions,
+    SmallTaskInfo, SmallUserInfo, SubmissionVerdict, TaskGroupInfo, TaskGroupLeaderboard, TaskInfo,
+    TaskLeaderboardRow, UserTaskSubmission, UserTaskSubmissions,
 };
 use axum::{
     extract::{Path, State},
     http::StatusCode,
     Json,
 };
+use fsm::fsm::StateMachine;
 
 use crate::{result::AppError, AppState};
 
@@ -73,6 +74,103 @@ pub async fn get_taskgroup(
                 name: task.title,
                 slug: task.slug,
             });
+        }
+        Ok((StatusCode::OK, Json(Some(grp))))
+    } else {
+        Ok((StatusCode::NOT_FOUND, Json(None)))
+    }
+}
+
+pub async fn get_taskgroup_leaderboard(
+    State(AppState { db }): State<AppState>,
+    Path(slug): Path<String>,
+) -> Result<(StatusCode, Json<Option<TaskGroupLeaderboard>>), AppError> {
+    let task_grp: Option<_> = sqlx::query!("SELECT * FROM task_group WHERE slug=?", slug)
+        .fetch_optional(&db)
+        .await?
+        .map(|v| TaskGroupLeaderboard {
+            id: v.id,
+            name: v.title,
+            slug: v.slug,
+            legend: v.legend,
+            tasks: vec![],
+        });
+
+    if let Some(mut grp) = task_grp {
+        for task in sqlx::query!(
+            "SELECT task.* FROM task
+            JOIN task_group ON task.group_id=task_group.id
+            WHERE task_group.id = ?",
+            grp.id
+        )
+        .fetch_all(&db)
+        .await?
+        {
+            let mut user_top_submissions = HashMap::new();
+            for submission in sqlx::query!(
+                "SELECT user_submission.* FROM user_submission WHERE task_id=?",
+                task.id
+            )
+            .fetch_all(&db)
+            .await?
+            {
+                let existing_by_user: Option<&mut (
+                    SmallUserInfo,
+                    i64,
+                    i64,
+                    usize,
+                    usize,
+                    SubmissionVerdict,
+                )> = user_top_submissions.get_mut(&submission.user_id);
+
+                let fsm: StateMachine = serde_json::from_str(&submission.solution_json)
+                    .map_err(|v| anyhow::anyhow!("Invalid JSON in database: {v}"))?;
+                let verdict: SubmissionVerdict = serde_json::from_str(&submission.verdict_json)
+                    .map_err(|v| anyhow::anyhow!("Invalid JSON in database: {v}"))?;
+
+                match existing_by_user {
+                    Some(existing) => {
+                        if existing.5.is_ok() && !verdict.is_ok() {
+                            continue;
+                        }
+                        if existing.1 < submission.when_unix_time {
+                            existing.1 = submission.when_unix_time;
+                            existing.2 = submission.id;
+                            existing.3 = fsm.nodes.len();
+                            existing.4 = fsm.links.len();
+                            existing.5 = verdict;
+                        }
+                    }
+                    None => {
+                        let user_info =
+                            sqlx::query!("SELECT * FROM account WHERE id=?", submission.user_id)
+                                .fetch_one(&db)
+                                .await?;
+
+                        user_top_submissions.insert(
+                            submission.user_id,
+                            (
+                                SmallUserInfo {
+                                    id: user_info.id,
+                                    name: user_info.user_name,
+                                    rudn_id: user_info.rudn_id,
+                                },
+                                submission.when_unix_time,
+                                submission.id,
+                                fsm.nodes.len(),
+                                fsm.links.len(),
+                                verdict,
+                            ),
+                        );
+                    }
+                }
+            }
+
+            grp.tasks.push(TaskLeaderboardRow {
+                name: task.title,
+                slug: task.slug,
+                latest_submissions: user_top_submissions.into_values().collect(),
+            })
         }
         Ok((StatusCode::OK, Json(Some(grp))))
     } else {

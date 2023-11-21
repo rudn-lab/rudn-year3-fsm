@@ -70,7 +70,11 @@ fn task_group_display(grp: &TaskGroupInfo) -> Html {
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">{&grp.name}</h5>
-                    <p class="card-text">{&grp.legend}</p>
+                    <p class="card-text">
+                    {&grp.legend}
+                    <Link<Route> to={Route::Leaderboard { group_slug: grp.slug.clone().into() }}>{" (посмотреть таблицу результатов)"}</Link<Route>>
+
+                    </p>
                     <ul class="list-group list-group-flush">
                         {items.collect::<Html>()}
                     </ul>

@@ -30,6 +30,29 @@ pub struct TaskGroupInfo {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct TaskGroupLeaderboard {
+    pub id: i64,
+    pub name: String,
+    pub slug: String,
+    pub legend: String,
+    pub tasks: Vec<TaskLeaderboardRow>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct TaskLeaderboardRow {
+    pub name: String,
+    pub slug: String,
+    pub latest_submissions: Vec<(SmallUserInfo, i64, i64, usize, usize, SubmissionVerdict)>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct SmallUserInfo {
+    pub id: i64,
+    pub name: String,
+    pub rudn_id: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct SmallTaskInfo {
     pub name: String,
     pub slug: String,
@@ -76,4 +99,13 @@ pub enum SubmissionVerdict {
 
     /// The task is invalid -- this is the jury's fault
     TaskInternalError(String),
+}
+
+impl SubmissionVerdict {
+    pub fn is_ok(&self) -> bool {
+        match self {
+            SubmissionVerdict::Ok(_) => true,
+            _ => false,
+        }
+    }
 }
