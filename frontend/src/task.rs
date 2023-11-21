@@ -29,7 +29,7 @@ pub fn task_page(props: &TaskPageProps) -> Html {
         task_slug,
     } = props;
     let fallback = html! {
-        <h1>{"Loading task info..."}<Spinner/></h1>
+        <h1>{"Загружаем задание..."}<Spinner/></h1>
     };
     html!(
         <Suspense {fallback}>
@@ -121,7 +121,7 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
             let (task, submissions) = res.clone();
 
             let send_to_server_button = if send_to_server_async.loading {
-                html!(<button type="button" class="btn btn-outline-success" disabled={true}>{"Send and test on server"}<Spinner small={true} /></button>)
+                html!(<button type="button" class="btn btn-outline-success" disabled={true}>{"Отправить и тестировать на сервере"}<Spinner small={true} /></button>)
             } else if let Some(data) = &send_to_server_async.data {
                 log::info!("Submission result: {data:?}");
                 gloo::utils::document()
@@ -129,14 +129,14 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                     .unwrap()
                     .reload()
                     .unwrap();
-                html!("Waiting for page reload...")
+                html!("Ждем перезагрузки страницы...")
             } else if let Some(error) = &send_to_server_async.error {
                 html!(<>
-                    <p class="text-danger">{"Error while sending: "}{error}</p>
-                    <button type="button" class="btn btn-outline-success" onclick={send_to_server}>{"Send and test on server"}</button>
+                    <p class="text-danger">{"Ошибка при отправке: "}{error}</p>
+                    <button type="button" class="btn btn-outline-success" onclick={send_to_server}>{"Отправить и тестировать на сервере"}</button>
                     </>)
             } else {
-                html!(<button type="button" class="btn btn-outline-success" onclick={send_to_server}>{"Send and test on server"}</button>)
+                html!(<button type="button" class="btn btn-outline-success" onclick={send_to_server}>{"Отправить и тестировать на сервере"}</button>)
             };
 
             let onselect = {
@@ -160,7 +160,7 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                     let mut tester = match tester {
                         Ok(t) => t,
                         Err(why) => {
-                            local_test_outcome.set(html!(<span class="text-danger">{"BUG IN TASK (please report this!): "}{why}</span>));
+                            local_test_outcome.set(html!(<span class="text-danger">{"ОШИБКА ЗАДАНИЯ (пожалуйста сообщите об этом!): "}{why}</span>));
                             return;
                         }
                     };
@@ -177,7 +177,7 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                         let test = match test {
                             Ok(t) => t,
                             Err(why) => {
-                                local_test_outcome.set(html!(<span class="text-danger">{"BUG IN TASK (please report this!): "}{why}</span>));
+                                local_test_outcome.set(html!(<span class="text-danger">{"ОШИБКА ЗАДАНИЯ (пожалуйста сообщите об этом!): "}{why}</span>));
                                 return;
                             }
                         };
@@ -190,7 +190,7 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                         let test = match test {
                             Ok(t) => t,
                             Err(why) => {
-                                local_test_outcome.set(html!(<span class="text-danger">{"BUG IN TASK (please report this!): "}{why}</span>));
+                                local_test_outcome.set(html!(<span class="text-danger">{"ОШИБКА ЗАДАНИЯ (пожалуйста сообщите об этом!): "}{why}</span>));
                                 return;
                             }
                         };
@@ -221,8 +221,8 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                         <table class="table overflow-scroll">
                             <thead>
                                 <tr>
-                                    <th scope="col">{"These words are Accepted"}</th>
-                                    <th scope="col">{"These words are Rejected"}</th>
+                                    <th scope="col">{"Эти слова принимаются"}</th>
+                                    <th scope="col">{"Эти слова не принимаются"}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -246,7 +246,7 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                     let mut tester = match tester {
                         Ok(t) => t,
                         Err(why) => {
-                            local_test_outcome.set(html!(<span class="text-danger">{"BUG IN TASK (please report this!): "}{why}</span>));
+                            local_test_outcome.set(html!(<span class="text-danger">{"ОШИБКА ЗАДАНИЯ (пожалуйста сообщите об этом!): "}{why}</span>));
                             return;
                         }
                     };
@@ -259,32 +259,32 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                     log::debug!("Running tester");
                     match tester.run_testing(seed) {
                         Err(why) => {
-                            local_test_outcome.set(html!(<span class="text-danger">{"BUG IN TASK (please report this!): "}{why}</span>));
+                            local_test_outcome.set(html!(<span class="text-danger">{"ОШИБКА ЗАДАНИЯ (пожалуйста сообщите об этом!): "}{why}</span>));
                             return;
                         }
                         Ok(res) => {
                             log::debug!("Tester result: {res:?}");
                             match res {
-                                fsm::tester::FSMTestingOutput::Ok(t) => local_test_outcome.set(html!(<span class="text-success">{"OK: all "}{t}{" tests passed"}</span>)),
+                                fsm::tester::FSMTestingOutput::Ok(t) => local_test_outcome.set(html!(<span class="text-success">{"OK: все "}{t}{" тесты прошли"}</span>)),
                                 fsm::tester::FSMTestingOutput::WrongAnswer {
                                     successes,
                                     total_tests,
                                     first_failure_seed,
                                     first_failure_expected_result,
                                 } => {
-                                    local_test_outcome.set(html!(<span class="text-warning">{"WRONG: only "}{successes}{"/"}{total_tests}{" passed"}</span>));
+                                    local_test_outcome.set(html!(<span class="text-warning">{"НЕВЕРНО: только "}{successes}{"/"}{total_tests}{" тестов прошло"}</span>));
                                     let word_to_test = match tester.make_test_case(first_failure_seed, first_failure_expected_result.into()) {
                                         Ok(t) => t,
                                         Err(why) => {
-                                            local_test_outcome.set(html!(<span class="text-danger">{"BUG IN TASK (please report this!): "}{why}</span>));
+                                            local_test_outcome.set(html!(<span class="text-danger">{"ОШИБКА ЗАДАНИЯ (пожалуйста сообщите об этом!): "}{why}</span>));
                                             return;
                                         }
                                     };
                                     examples.set(html!(
-                                        <p>{"Your solution fails for word: "}<WordDisplay word={word_to_test.0} response={word_to_test.1} /></p>
+                                        <p>{"Ваше решение не работает для слова: "}<WordDisplay word={word_to_test.0} response={word_to_test.1} /></p>
                                     ));
                             },
-                                fsm::tester::FSMTestingOutput::FSMInvalid(why) => local_test_outcome.set(html!(<span class="text-warning">{"INVALID: "}{why}</span>)),
+                                fsm::tester::FSMTestingOutput::FSMInvalid(why) => local_test_outcome.set(html!(<span class="text-warning">{"НЕВЕРНЫЙ ФОРМАТ: "}{why}</span>)),
                             }
                         }
                     }
@@ -298,7 +298,7 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                     <Column>
                         <div>
                         <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-outline-primary" onclick={run_local_test}>{"Test locally"}</button>
+                            <button type="button" class="btn btn-outline-primary" onclick={run_local_test}>{"Тестировать локально"}</button>
                             {send_to_server_button}
                         </div>
 
@@ -309,7 +309,7 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                         <div>
                             <div>
                                 {(&*examples).clone()}
-                                <button type="button" class="btn btn-outline-primary" onclick={make_examples}>{"Examples?"}</button>
+                                <button type="button" class="btn btn-outline-primary" onclick={make_examples}>{"Примеры?"}</button>
                             </div>
                             <div>
                                 {(&*local_test_outcome).clone()}
@@ -322,7 +322,7 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
             }
         }
         Err(ref failure) => {
-            html!(<div class="alert alert-danger">{"Error while loading this task. Try reloading the page. Reason: "}{failure}</div>)
+            html!(<div class="alert alert-danger">{"Ошибка при загрузке этой задачи. Перезагрузите страницу. Причина: "}{failure}</div>)
         }
     };
 
@@ -375,23 +375,23 @@ fn submissions_list(submissions: &UserTaskSubmissions, onselect: &Callback<State
 
             let verdict = match &v.verdict {
                 api::SubmissionVerdict::Ok(tests) => html!(
-                    <span class="d-inline-block text-success fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("OK: passed all {tests} tests")}>
+                    <span class="d-inline-block text-success fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("OK: прошли все {tests} тестов")}>
                         {BI::CHECK_CIRCLE_FILL}
                     </span>
                 ),
                 api::SubmissionVerdict::WrongAnswer { total_tests, successes, .. } => html!(
-                    <span class="d-inline-block text-warning fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("WRONG: passed only {successes} out of {total_tests} tests")}>
+                    <span class="d-inline-block text-warning fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("НЕВЕРНО: прошли только {successes} из {total_tests} тестов")}>
                         {BI::EXCLAMATION_TRIANGLE_FILL}
                     </span>
                 ),
                 api::SubmissionVerdict::InvalidFSM(err) => {
                     let why = match err {
-                        fsm::fsm::FSMError::InfiniteLoop => "There is a loop of empty links, which will never terminate",
-                        fsm::fsm::FSMError::NoEntryLinks => "There are no entry links into the state machine",
-                        fsm::fsm::FSMError::DisjointedLink(_) => "There is a link that refers to nodes that don't exist",
+                        fsm::fsm::FSMError::InfiniteLoop => "Есть цикл из пустых связей, который никогда не завершится",
+                        fsm::fsm::FSMError::NoEntryLinks => "Нет вводных стрелочек в конечный автомат",
+                        fsm::fsm::FSMError::DisjointedLink(_) => "Есть стрелочка, которая связана с несуществующим кружочком",
                     };
                     html!(
-                    <span class="d-inline-block text-danger fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("INVALID: {why}")}>
+                    <span class="d-inline-block text-danger fs-2" tabindex="0" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-content={format!("НЕВЕРНЫЙ ФОРМАТ: {why}")}>
                         {BI::SHIELD_FILL_X}
                     </span>
                 )},
@@ -419,9 +419,9 @@ fn submissions_list(submissions: &UserTaskSubmissions, onselect: &Callback<State
             <thead>
                 <tr>
                     <th scope="col">{"ID"}</th>
-                    <th scope="col">{"Date"}</th>
-                    <th scope="col">{"Load version"}</th>
-                    <th scope="col">{"Verdict"}</th>
+                    <th scope="col">{"Дата"}</th>
+                    <th scope="col">{"Загрузить версию"}</th>
+                    <th scope="col">{"Вердикт"}</th>
                 </tr>
             </thead>
             <tbody>

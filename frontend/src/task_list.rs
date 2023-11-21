@@ -11,7 +11,7 @@ use crate::Route;
 #[function_component(HomeTaskList)]
 pub fn home_task_list() -> Html {
     let fallback = html! {
-        <h1>{"Loading tasks..."}<Spinner/></h1>
+        <h1>{"Загружаем задания..."}<Spinner/></h1>
     };
     html!(
         <Suspense {fallback}>
@@ -38,7 +38,7 @@ fn profile_nav_inner() -> HtmlResult {
                 .collect::<Html>();
             html! {
                 <>
-                    <h1>{res.len()} {" task groups"}</h1>
+                    <h1>{res.len()} {" групп заданий"}</h1>
                     <div class="row row-cols-3">
                         {task_grps}
                     </div>
@@ -46,7 +46,7 @@ fn profile_nav_inner() -> HtmlResult {
             }
         }
         Err(ref failure) => {
-            html!(<div class="alert alert-danger">{"Error while loading tasks. Try reloading the page. Reason: "}{failure}</div>)
+            html!(<div class="alert alert-danger">{"Ошибка при загрузке задач. Перезагрузите страницу. Причина: "}{failure}</div>)
         }
     };
 

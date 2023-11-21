@@ -73,7 +73,7 @@ fn App() -> Html {
                 group_slug,
                 task_slug,
             } => html!(<TaskPage {group_slug} {task_slug}/>),
-            Route::NotFound => html!("route not found"),
+            Route::NotFound => html!("404"),
         }
     }
 
@@ -84,10 +84,10 @@ fn App() -> Html {
                 <div class="container-fluid">
                     <Link<Route> classes="navbar-brand" to={Route::Home}>{"RUDN FSM"}</Link<Route>>
                     <div class="nav-item">
-                        <Link<Route> classes="nav-link" to={Route::Editor}>{"Editor"}</Link<Route>>
+                        <Link<Route> classes="nav-link" to={Route::Editor}>{"Редактор автоматов"}</Link<Route>>
                     </div>
                     <div class="nav-item">
-                        <Link<Route> classes="nav-link" to={Route::Scripter}>{"Task script tester"}</Link<Route>>
+                        <Link<Route> classes="nav-link" to={Route::Scripter}>{"Отладка заданий"}</Link<Route>>
                     </div>
                     <ProfileNav />
                 </div>

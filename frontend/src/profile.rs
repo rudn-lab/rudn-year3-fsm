@@ -26,7 +26,7 @@ pub fn profile() -> Html {
 
     if let Some(token) = profile_token {
         let fallback = html! {
-            <h1>{"Loading profile details..."}<Spinner /></h1>
+            <h1>{"Загружаем информацию профиля..."}<Spinner /></h1>
         };
         html!(
             <Suspense {fallback}>
@@ -61,9 +61,9 @@ fn profile_inner(props: &ProfileNavInnerProps) -> HtmlResult {
             }) => html! {
                 <>
                     <h1>{name}</h1>
-                    <h2>{"RUDN ID: "}{rudn_id}</h2>
+                    <h2>{"Студенческий билет RUDN: "}{rudn_id}</h2>
 
-                    <p>{"Token for logging in on other devices: "}<code>{token}</code></p>
+                    <p>{"Токен для других устройств: "}<code>{token}</code></p>
                 </>
             },
             UserInfoResult::NoSuchToken => {
@@ -74,10 +74,10 @@ fn profile_inner(props: &ProfileNavInnerProps) -> HtmlResult {
                     .unwrap()
                     .reload()
                     .unwrap();
-                html!({ "User does not exist" })
+                html!({ "Пользователь не существует" })
             }
         },
-        Err(ref failure) => html!(<>{"Error loading your profile: "}{failure.to_string()}</>),
+        Err(ref failure) => html!(<>{"Ошибка при загрузке профиля: "}{failure.to_string()}</>),
     };
 
     Ok(result_html)
@@ -94,7 +94,7 @@ pub fn profile_nav() -> Html {
 
     if let Some(key) = profile_key {
         let fallback = html! {
-            <Link<Route> classes="nav-link" to={Route::Profile}>{"Loading user..."}</Link<Route>>
+            <Link<Route> classes="nav-link" to={Route::Profile}>{"Загружаем пользователя..."}</Link<Route>>
         };
         html!(
             <div class="nav-item">
@@ -106,7 +106,7 @@ pub fn profile_nav() -> Html {
     } else {
         html!(
             <div class="nav-item">
-                <Link<Route> classes="nav-link" to={Route::Profile}>{"Login or register first"}</Link<Route>>
+                <Link<Route> classes="nav-link" to={Route::Profile}>{"Зарегестрируйся или войди сначала"}</Link<Route>>
             </div>
         )
     }
@@ -133,7 +133,7 @@ fn profile_nav_inner(props: &ProfileNavInnerProps) -> HtmlResult {
     let result_html = match *resp {
         Ok(ref res) => match res {
             UserInfoResult::Ok(UserInfo { name, rudn_id, .. }) => {
-                format!("Hello, {name} ({rudn_id})")
+                format!("Привет, {name} ({rudn_id})")
             }
             UserInfoResult::NoSuchToken => {
                 navigator.push(&Route::Profile);
@@ -145,7 +145,7 @@ fn profile_nav_inner(props: &ProfileNavInnerProps) -> HtmlResult {
                     .reload()
                     .unwrap();
 
-                "User does not exist".to_string()
+                "Пользователь не существует".to_string()
             }
         },
         Err(ref failure) => failure.to_string(),
@@ -159,7 +159,7 @@ fn register() -> Html {
     html!(
         <div>
             <div class="alert alert-warning attention">
-                {"You need to register or login to continue"}
+                {"Нужно зарегестрироваться или войти в систему, чтобы решать задачи"}
             </div>
             <Row>
                 <Column>
@@ -222,9 +222,9 @@ fn new_register() -> Html {
     let validation = match &token_result.data {
         Some(_) => FormControlValidation::Valid(None),
         None => match &token_result.error {
-            Some(why) => FormControlValidation::Invalid(
-                format!("Error while registering token: {why}").into(),
-            ),
+            Some(why) => {
+                FormControlValidation::Invalid(format!("Ошибка при регистрации: {why}").into())
+            }
             None => FormControlValidation::None,
         },
     };
@@ -242,16 +242,16 @@ fn new_register() -> Html {
 
     html!(
         <>
-            <h1>{"Create new account"}</h1>
+            <h1>{"Создать новый аккаунт"}</h1>
             <form>
-                <FormControl id="name" ctype={FormControlType::Text} class="mb-3" label="Your real name" value={(*name_state).clone()} oninput={oninput_name} validation={validation.clone()}/>
-                <FormControl id="rudnid" ctype={FormControlType::Number{min: None, max: None}} class="mb-3" label="Your RUDN ID" value={(*rudnid_state).clone()} oninput={oninput_rudnid} {validation}/>
+                <FormControl id="name" ctype={FormControlType::Text} class="mb-3" label="Имя студента" value={(*name_state).clone()} oninput={oninput_name} validation={validation.clone()}/>
+                <FormControl id="rudnid" ctype={FormControlType::Number{min: None, max: None}} class="mb-3" label="Номер студенческого билета RUDN" value={(*rudnid_state).clone()} oninput={oninput_rudnid} {validation}/>
 
                 <button type="submit" class="btn btn-primary" disabled={token_result.loading} onclick={start}>
                     if token_result.loading {
                         <Spinner small={true}  />
                     }
-                    {"Register"}
+                    {"Зарегистрироваться"}
                 </button>
             </form>
         </>
@@ -288,12 +288,12 @@ fn existing_register() -> Html {
         Some(data) => match data {
             UserInfoResult::Ok(_) => FormControlValidation::Valid(None),
             UserInfoResult::NoSuchToken => {
-                FormControlValidation::Invalid("This token cannot be found".into())
+                FormControlValidation::Invalid("Этот токен не найден".into())
             }
         },
         None => match &token_result.error {
             Some(why) => {
-                FormControlValidation::Invalid(format!("Error while checking token: {why}").into())
+                FormControlValidation::Invalid(format!("Ошибка при проверке токена: {why}").into())
             }
             None => FormControlValidation::None,
         },
@@ -320,16 +320,16 @@ fn existing_register() -> Html {
 
     html!(
         <>
-            <h1>{"Use an existing token"}</h1>
+            <h1>{"Использовать существующий токен"}</h1>
 
-            <FormControl id="token" ctype={FormControlType::Text} class="mb-3" label="Your account token" oninput={oninput_token} value={(*token_state).clone()} {validation}/>
+            <FormControl id="token" ctype={FormControlType::Text} class="mb-3" label="Токен аккаунта" oninput={oninput_token} value={(*token_state).clone()} {validation}/>
 
 
             <Button style={Color::Primary} disabled={&token_result.loading} onclick={start}>
                 if token_result.loading {
                     <Spinner small={true}  />
                 }
-                {"Use existing token"}
+                {"Войти с токеном"}
             </Button>
         </>
     )
