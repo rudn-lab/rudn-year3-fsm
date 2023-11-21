@@ -213,7 +213,8 @@ fn new_register() -> Html {
 
     let start = {
         shadow_clone!(token_result);
-        move |_ev| {
+        move |ev: MouseEvent| {
+            ev.prevent_default();
             token_result.run();
         }
     };
@@ -242,16 +243,17 @@ fn new_register() -> Html {
     html!(
         <>
             <h1>{"Create new account"}</h1>
+            <form>
+                <FormControl id="name" ctype={FormControlType::Text} class="mb-3" label="Your real name" value={(*name_state).clone()} oninput={oninput_name} validation={validation.clone()}/>
+                <FormControl id="rudnid" ctype={FormControlType::Number{min: None, max: None}} class="mb-3" label="Your RUDN ID" value={(*rudnid_state).clone()} oninput={oninput_rudnid} {validation}/>
 
-            <FormControl id="name" ctype={FormControlType::Text} class="mb-3" label="Your real name" value={(*name_state).clone()} oninput={oninput_name} validation={validation.clone()}/>
-            <FormControl id="rudnid" ctype={FormControlType::Number{min: None, max: None}} class="mb-3" label="Your RUDN ID" value={(*rudnid_state).clone()} oninput={oninput_rudnid} {validation}/>
-
-            <Button style={Color::Primary} disabled={&token_result.loading} onclick={start}>
-                if token_result.loading {
-                    <Spinner small={true}  />
-                }
-                {"Register"}
-            </Button>
+                <button type="submit" class="btn btn-primary" disabled={token_result.loading} onclick={start}>
+                    if token_result.loading {
+                        <Spinner small={true}  />
+                    }
+                    {"Register"}
+                </button>
+            </form>
         </>
     )
 }

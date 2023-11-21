@@ -150,7 +150,7 @@ impl StateMachine {
         }
 
         // TODO: better termination criteria
-        let mut deadline = 100_0usize;
+        let mut deadline = 100_00usize;
 
         loop {
             if deadline == 0 {
@@ -161,6 +161,24 @@ impl StateMachine {
             deadline -= 1;
 
             let mut new_cursors = vec![];
+
+            // If there are cursors with empty words, check if they're at accepting nodes.
+            // If they are, the machine accepts.
+            for cursor in cursors.iter() {
+                if cursor.remaining_word.is_empty() {
+                    if self.nodes[cursor.node_idx].accept_state {
+                        return Ok(FSMOutput::Accept);
+                    }
+                }
+            }
+
+            // Remove all cursors with empty words that ended up on non-accepting nodes.
+            cursors.retain(|v| !v.remaining_word.is_empty());
+
+            // If there are no cursors left, the machine rejects.
+            if cursors.is_empty() {
+                return Ok(FSMOutput::Reject);
+            }
 
             for Cursor {
                 remaining_word,
@@ -186,24 +204,6 @@ impl StateMachine {
             cursors.clear();
             cursors.extend(new_cursors.into_iter());
             log::debug!("{cursors:?}");
-
-            // If there are cursors with empty words, check if they're at accepting nodes.
-            // If they are, the machine accepts.
-            for cursor in cursors.iter() {
-                if cursor.remaining_word.is_empty() {
-                    if self.nodes[cursor.node_idx].accept_state {
-                        return Ok(FSMOutput::Accept);
-                    }
-                }
-            }
-
-            // Remove all cursors with empty words that ended up on non-accepting nodes.
-            cursors.retain(|v| !v.remaining_word.is_empty());
-
-            // If there are no cursors left, the machine rejects.
-            if cursors.is_empty() {
-                return Ok(FSMOutput::Reject);
-            }
         }
     }
 

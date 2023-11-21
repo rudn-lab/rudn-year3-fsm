@@ -61,6 +61,7 @@ impl RhaiRng {
 impl<'a> FSMTester<'a> {
     pub fn new(fsm: StateMachine, script: &str) -> anyhow::Result<Self> {
         let mut engine = Engine::new();
+        engine.set_max_expr_depths(100, 100);
         let ast = engine.compile(script)?;
         let mut scope = Scope::new();
         Self::check_script_api(&mut engine, &ast, &mut scope)?;
@@ -70,6 +71,21 @@ impl<'a> FSMTester<'a> {
             ast,
             scope,
         })
+    }
+
+    pub fn semiclone(&self) -> Self {
+        let mut engine = Engine::new();
+        engine
+            .register_type_with_name::<RhaiRng>("RhaiRng")
+            .register_fn("gen_range", RhaiRng::gen_range)
+            .set_max_expr_depths(100, 100);
+
+        Self {
+            fsm: self.fsm.clone(),
+            engine,
+            ast: self.ast.clone(),
+            scope: self.scope.clone(),
+        }
     }
 
     fn check_script_api(
@@ -104,7 +120,11 @@ impl<'a> FSMTester<'a> {
         Ok(())
     }
 
+    #[cfg(target_family = "wasm")]
     const TESTS: usize = 250;
+
+    #[cfg(not(target_family = "wasm"))]
+    const TESTS: usize = 2500;
 
     /// Check the FSM against a generated battery of tests.
     ///
@@ -156,6 +176,16 @@ impl<'a> FSMTester<'a> {
         }
     }
 
+    pub fn check_word(&mut self, word: String) -> anyhow::Result<FSMOutput> {
+        let true_output: bool =
+            self.engine
+                .call_fn::<bool>(&mut self.scope, &self.ast, "check_word", (word,))?;
+        Ok(match true_output {
+            true => FSMOutput::Accept,
+            false => FSMOutput::Reject,
+        })
+    }
+
     pub fn make_test_case(
         &mut self,
         seed: i64,
@@ -171,16 +201,7 @@ impl<'a> FSMTester<'a> {
             "gen_word",
             (goal_output,),
         )?;
-        let true_output = self.engine.call_fn::<bool>(
-            &mut self.scope,
-            &self.ast,
-            "check_word",
-            (test_case.clone(),),
-        )?;
-        let true_output = match true_output {
-            true => FSMOutput::Accept,
-            false => FSMOutput::Reject,
-        };
+        let true_output = self.check_word(test_case.clone())?;
         Ok((test_case, true_output))
     }
 

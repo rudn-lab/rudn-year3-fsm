@@ -1,6 +1,7 @@
 mod canvas;
 mod editor;
 mod profile;
+mod scripter;
 mod task;
 mod task_list;
 
@@ -14,6 +15,7 @@ use yew_router::prelude::*;
 use crate::editor::Editor;
 use crate::profile::Profile;
 use crate::profile::ProfileNav;
+use crate::scripter::Scripter;
 use crate::task::TaskPage;
 use crate::task_list::HomeTaskList;
 
@@ -26,6 +28,9 @@ enum Route {
 
     #[at("/editor")]
     Editor,
+
+    #[at("/scripter")]
+    Scripter,
 
     #[at("/task/:group_slug/:task_slug")]
     Task {
@@ -63,6 +68,7 @@ fn App() -> Html {
             Route::Home => html!(<Home/>),
             Route::Profile => html!(<Profile />),
             Route::Editor => html!(<Editor />),
+            Route::Scripter => html!(<Scripter />),
             Route::Task {
                 group_slug,
                 task_slug,
@@ -79,6 +85,9 @@ fn App() -> Html {
                     <Link<Route> classes="navbar-brand" to={Route::Home}>{"RUDN FSM"}</Link<Route>>
                     <div class="nav-item">
                         <Link<Route> classes="nav-link" to={Route::Editor}>{"Editor"}</Link<Route>>
+                    </div>
+                    <div class="nav-item">
+                        <Link<Route> classes="nav-link" to={Route::Scripter}>{"Task script tester"}</Link<Route>>
                     </div>
                     <ProfileNav />
                 </div>
