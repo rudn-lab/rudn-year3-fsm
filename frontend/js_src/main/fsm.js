@@ -1,83 +1,5 @@
-var greekLetterNames = [ 'Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta', 'Iota', 'Kappa', 'Lambda', 'Mu', 'Nu', 'Xi', 'Omicron', 'Pi', 'Rho', 'Sigma', 'Tau', 'Upsilon', 'Phi', 'Chi', 'Psi', 'Omega' ];
-
-function convertLatexShortcuts(text) {
-	// html greek characters
-	for(var i = 0; i < greekLetterNames.length; i++) {
-		var name = greekLetterNames[i];
-		text = text.replace(new RegExp('\\\\' + name, 'g'), String.fromCharCode(913 + i + (i > 16)));
-		text = text.replace(new RegExp('\\\\' + name.toLowerCase(), 'g'), String.fromCharCode(945 + i + (i > 16)));
-	}
-
-	// subscripts
-	for(var i = 0; i < 10; i++) {
-		text = text.replace(new RegExp('_' + i, 'g'), String.fromCharCode(8320 + i));
-	}
-
-	return text;
-}
-
-function textToXML(text) {
-	text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-	var result = '';
-	for(var i = 0; i < text.length; i++) {
-		var c = text.charCodeAt(i);
-		if(c >= 0x20 && c <= 0x7E) {
-			result += text[i];
-		} else {
-			result += '&#' + c + ';';
-		}
-	}
-	return result;
-}
-
-function drawArrow(c, x, y, angle) {
-	var dx = Math.cos(angle);
-	var dy = Math.sin(angle);
-	c.beginPath();
-	c.moveTo(x, y);
-	c.lineTo(x - 8 * dx + 5 * dy, y - 8 * dy - 5 * dx);
-	c.lineTo(x - 8 * dx - 5 * dy, y - 8 * dy + 5 * dx);
-	c.fill();
-}
-
 function canvasHasFocus() {
 	return (document.activeElement || document.body) == document.body;
-}
-
-function drawText(c, originalText, x, y, angleOrNull, isSelected) {
-	text = convertLatexShortcuts(originalText);
-	c.font = '20px "Times New Roman", serif';
-	var width = c.measureText(text).width;
-
-	// center the text
-	x -= width / 2;
-
-	// position the text intelligently if given an angle
-	if(angleOrNull != null) {
-		var cos = Math.cos(angleOrNull);
-		var sin = Math.sin(angleOrNull);
-		var cornerPointX = (width / 2 + 5) * (cos > 0 ? 1 : -1);
-		var cornerPointY = (10 + 5) * (sin > 0 ? 1 : -1);
-		var slide = sin * Math.pow(Math.abs(sin), 40) * cornerPointX - cos * Math.pow(Math.abs(cos), 10) * cornerPointY;
-		x += cornerPointX - sin * slide;
-		y += cornerPointY + cos * slide;
-	}
-
-	// draw text and caret (round the coordinates so the caret falls on a pixel)
-	if('advancedFillText' in c) {
-		c.advancedFillText(text, originalText, x + width / 2, y, angleOrNull);
-	} else {
-		x = Math.round(x);
-		y = Math.round(y);
-		c.fillText(text, x, y + 6);
-		if(isSelected && caretVisible && canvasHasFocus() && document.hasFocus()) {
-			x += width;
-			c.beginPath();
-			c.moveTo(x, y - 10);
-			c.lineTo(x, y + 10);
-			c.stroke();
-		}
-	}
 }
 
 var caretTimer;
@@ -271,71 +193,72 @@ var prepare_canvas = function(new_canvas) {
 			draw();
 		}
 	};
+
+	canvas.onkeydown = function(e) {
+		var key = crossBrowserKey(e);
+	
+		if(key == 16) {
+			shift = true;
+		} else if(!canvasHasFocus()) {
+			// don't read keystrokes when other things have focus
+			return true;
+		} else if(key == 8) { // backspace key
+			if(selectedObject != null && 'text' in selectedObject) {
+				selectedObject.text = selectedObject.text.substr(0, selectedObject.text.length - 1);
+				resetCaret();
+				draw();
+			}
+	
+			// backspace is a shortcut for the back button, but do NOT want to change pages
+			return false;
+		} else if(key == 46) { // delete key
+			if(selectedObject != null) {
+				for(var i = 0; i < nodes.length; i++) {
+					if(nodes[i] == selectedObject) {
+						nodes.splice(i--, 1);
+					}
+				}
+				for(var i = 0; i < links.length; i++) {
+					if(links[i] == selectedObject || links[i].node == selectedObject || links[i].nodeA == selectedObject || links[i].nodeB == selectedObject) {
+						links.splice(i--, 1);
+					}
+				}
+				selectedObject = null;
+				draw();
+			}
+		}
+	};
+
+	canvas.onkeyup = function(e) {
+		var key = crossBrowserKey(e);
+	
+		if(key == 16) {
+			shift = false;
+		}
+	};
+	
+	document.onkeypress = function(e) {
+		// don't read keystrokes when other things have focus
+		var key = crossBrowserKey(e);
+		if(!canvasHasFocus()) {
+			// don't read keystrokes when other things have focus
+			return true;
+		} else if(key >= 0x20 && key <= 0x7E && !e.metaKey && !e.altKey && !e.ctrlKey && selectedObject != null && 'text' in selectedObject) {
+			selectedObject.text += String.fromCharCode(key);
+			resetCaret();
+			draw();
+	
+			// don't let keys do their actions (like space scrolls down the page)
+			return false;
+		} else if(key == 8) {
+			// backspace is a shortcut for the back button, but do NOT want to change pages
+			return false;
+		}
+	};
 }
 
 var shift = false;
 
-document.onkeydown = function(e) {
-	var key = crossBrowserKey(e);
-
-	if(key == 16) {
-		shift = true;
-	} else if(!canvasHasFocus()) {
-		// don't read keystrokes when other things have focus
-		return true;
-	} else if(key == 8) { // backspace key
-		if(selectedObject != null && 'text' in selectedObject) {
-			selectedObject.text = selectedObject.text.substr(0, selectedObject.text.length - 1);
-			resetCaret();
-			draw();
-		}
-
-		// backspace is a shortcut for the back button, but do NOT want to change pages
-		return false;
-	} else if(key == 46) { // delete key
-		if(selectedObject != null) {
-			for(var i = 0; i < nodes.length; i++) {
-				if(nodes[i] == selectedObject) {
-					nodes.splice(i--, 1);
-				}
-			}
-			for(var i = 0; i < links.length; i++) {
-				if(links[i] == selectedObject || links[i].node == selectedObject || links[i].nodeA == selectedObject || links[i].nodeB == selectedObject) {
-					links.splice(i--, 1);
-				}
-			}
-			selectedObject = null;
-			draw();
-		}
-	}
-};
-
-document.onkeyup = function(e) {
-	var key = crossBrowserKey(e);
-
-	if(key == 16) {
-		shift = false;
-	}
-};
-
-document.onkeypress = function(e) {
-	// don't read keystrokes when other things have focus
-	var key = crossBrowserKey(e);
-	if(!canvasHasFocus()) {
-		// don't read keystrokes when other things have focus
-		return true;
-	} else if(key >= 0x20 && key <= 0x7E && !e.metaKey && !e.altKey && !e.ctrlKey && selectedObject != null && 'text' in selectedObject) {
-		selectedObject.text += String.fromCharCode(key);
-		resetCaret();
-		draw();
-
-		// don't let keys do their actions (like space scrolls down the page)
-		return false;
-	} else if(key == 8) {
-		// backspace is a shortcut for the back button, but do NOT want to change pages
-		return false;
-	}
-};
 
 function crossBrowserKey(e) {
 	e = e || window.event;

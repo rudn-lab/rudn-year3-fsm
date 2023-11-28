@@ -6,6 +6,7 @@ mod scripter;
 mod task;
 mod task_list;
 
+use canvas::Canvas;
 use gloo::storage::Storage;
 use yew::prelude::*;
 use yew_bootstrap::component::*;
@@ -66,42 +67,49 @@ fn Home() -> Html {
     }
 }
 
+// #[function_component]
+// fn App() -> Html {
+//     fn switch(route: Route) -> Html {
+//         match route {
+//             Route::Home => html!(<Home/>),
+//             Route::Profile => html!(<Profile />),
+//             Route::Editor => html!(<Editor />),
+//             Route::Scripter => html!(<Scripter />),
+//             Route::Leaderboard { group_slug } => html!(<Leaderboard {group_slug} />),
+//             Route::Task {
+//                 group_slug,
+//                 task_slug,
+//             } => html!(<TaskPage {group_slug} {task_slug}/>),
+//             Route::NotFound => html!("404"),
+//         }
+//     }
+
+//     html! {
+//         <BrowserRouter>
+//             {BIFiles::cdn()}
+//             <nav class="navbar bg-body-tertiary">
+//                 <div class="container-fluid">
+//                     <Link<Route> classes="navbar-brand" to={Route::Home}>{"RUDN FSM"}</Link<Route>>
+//                     <div class="nav-item">
+//                         <Link<Route> classes="nav-link" to={Route::Editor}>{"Редактор автоматов"}</Link<Route>>
+//                     </div>
+//                     <div class="nav-item">
+//                         <Link<Route> classes="nav-link" to={Route::Scripter}>{"Отладка заданий"}</Link<Route>>
+//                     </div>
+//                     <ProfileNav />
+//                 </div>
+//             </nav>
+//             <Container>
+//                 <Switch<Route> render={switch} />
+//             </Container>
+//         </BrowserRouter>
+//     }
+// }
+
 #[function_component]
 fn App() -> Html {
-    fn switch(route: Route) -> Html {
-        match route {
-            Route::Home => html!(<Home/>),
-            Route::Profile => html!(<Profile />),
-            Route::Editor => html!(<Editor />),
-            Route::Scripter => html!(<Scripter />),
-            Route::Leaderboard { group_slug } => html!(<Leaderboard {group_slug} />),
-            Route::Task {
-                group_slug,
-                task_slug,
-            } => html!(<TaskPage {group_slug} {task_slug}/>),
-            Route::NotFound => html!("404"),
-        }
-    }
-
     html! {
-        <BrowserRouter>
-            {BIFiles::cdn()}
-            <nav class="navbar bg-body-tertiary">
-                <div class="container-fluid">
-                    <Link<Route> classes="navbar-brand" to={Route::Home}>{"RUDN FSM"}</Link<Route>>
-                    <div class="nav-item">
-                        <Link<Route> classes="nav-link" to={Route::Editor}>{"Редактор автоматов"}</Link<Route>>
-                    </div>
-                    <div class="nav-item">
-                        <Link<Route> classes="nav-link" to={Route::Scripter}>{"Отладка заданий"}</Link<Route>>
-                    </div>
-                    <ProfileNav />
-                </div>
-            </nav>
-            <Container>
-                <Switch<Route> render={switch} />
-            </Container>
-        </BrowserRouter>
+        <Canvas />
     }
 }
 
