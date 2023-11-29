@@ -97,6 +97,7 @@ impl SelfLink {
         &self,
         nodes: &[Node],
         c: &CanvasRenderingContext2d,
+        me_is_selected: bool,
         selections: &SelectionContext,
     ) -> anyhow::Result<()> {
         let LinkStuff {
@@ -118,15 +119,16 @@ impl SelfLink {
         .unwrap();
         c.stroke();
         // draw the text on the loop farthest from the node
-        let text_x = circle.pos.0 + circle.radius + self.anchor_angle.sin();
-        let text_y = circle.pos.1 + circle.radius * self.anchor_angle.cos();
+        let text_x = circle.pos.0 + circle.radius * self.anchor_angle.cos();
+        let text_y = circle.pos.1 + circle.radius * self.anchor_angle.sin();
         draw_text(
             c,
             &self.text,
             text_x,
             text_y,
             Some(self.anchor_angle),
-            false,
+            me_is_selected,
+            selections,
         ); // TODO: selection
 
         // draw head of arrow

@@ -61,6 +61,8 @@ impl StartLink {
         &self,
         nodes: &[Node],
         c: &CanvasRenderingContext2d,
+        me_is_selected: bool,
+
         selections: &SelectionContext,
     ) -> anyhow::Result<()> {
         let (start, end) = self.get_start_link_endpoints(nodes)?;
@@ -71,7 +73,15 @@ impl StartLink {
 
         // draw the text at the end without the arrow
         let text_angle = (start.1 - end.1).atan2(start.0 - end.0);
-        draw_text(c, &self.text, start.0, start.1, Some(text_angle), false); // TODO: selection;
+        draw_text(
+            c,
+            &self.text,
+            start.0,
+            start.1,
+            Some(text_angle),
+            me_is_selected,
+            selections,
+        ); // TODO: selection;
 
         // draw the head of the arrow
         draw_arrow(c, end, f64::atan2(-self.delta.1, -self.delta.0));

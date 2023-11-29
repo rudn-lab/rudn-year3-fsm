@@ -16,6 +16,7 @@ use self::node::Node;
 use self::normal_link::NormalLink;
 use self::start_link::StartLink;
 use self::temp_link::TemporaryLink;
+use self::utils::SNAP_TO_PADDING;
 
 mod any_link;
 mod node;
@@ -52,6 +53,7 @@ struct SelectionContext {
     link_highlights: Vec<Option<String>>,
     current_active_object: Option<Object>,
     caret_is_displayed: bool,
+    canvas_is_focused: bool,
 }
 
 pub struct Canvas {
@@ -100,27 +102,36 @@ impl Canvas {
         let red = JsValue::from_str("red");
 
         for (id, node) in self.nodes.iter().enumerate() {
-            // TODO c.fill_style, c.stroke_style depending on selection
+            let me_is_selected;
+
             if self.selections.current_active_object == Some(Object::Node(id)) {
                 ctx.set_fill_style(&red);
                 ctx.set_stroke_style(&red);
+                me_is_selected = true;
             } else {
                 ctx.set_fill_style(&white);
                 ctx.set_stroke_style(&white);
+                me_is_selected = false;
             }
-            node.draw(&ctx, &self.selections);
+            node.draw(&ctx, me_is_selected, &self.selections);
         }
         let mut to_delete = HashSet::new();
         for (id, link) in self.links.iter().enumerate() {
+            let me_is_selected;
             if self.selections.current_active_object == Some(Object::Link(id)) {
                 ctx.set_fill_style(&red);
                 ctx.set_stroke_style(&red);
+                me_is_selected = true;
             } else {
                 ctx.set_fill_style(&white);
                 ctx.set_stroke_style(&white);
+                me_is_selected = false;
             }
 
-            if link.draw(&self.nodes, &ctx, &self.selections).is_err() {
+            if link
+                .draw(&self.nodes, &ctx, me_is_selected, &self.selections)
+                .is_err()
+            {
                 to_delete.insert(id);
             }
         }
@@ -140,7 +151,7 @@ impl Canvas {
         if let Some(t) = &self.current_link {
             ctx.set_fill_style(&white);
             ctx.set_stroke_style(&white);
-            let _ = t.draw(&self.nodes, &ctx, &self.selections);
+            let _ = t.draw(&self.nodes, &ctx, false, &self.selections);
         }
 
         ctx.restore();
@@ -192,6 +203,27 @@ impl Canvas {
         self.nodes.extend(fsm.nodes.into_iter().map(|v| v.into()));
         self.links.extend(fsm.links.into_iter().map(|v| v.into()));
     }
+
+    fn snap_node(&mut self, node_id: usize) {
+        let my_nodes = self.nodes.clone();
+        let node = self.nodes.get_mut(node_id);
+        let node = match node {
+            Some(n) => n,
+            None => return,
+        };
+        for (i, other_node) in my_nodes.into_iter().enumerate() {
+            if node_id == i {
+                continue;
+            }
+
+            if (node.x - other_node.x).abs() < SNAP_TO_PADDING {
+                node.x = other_node.x;
+            }
+            if (node.y - other_node.y).abs() < SNAP_TO_PADDING {
+                node.y = other_node.y;
+            }
+        }
+    }
 }
 
 impl Component for Canvas {
@@ -215,6 +247,7 @@ impl Component for Canvas {
                 link_highlights: vec![],
                 current_active_object: None,
                 caret_is_displayed: false,
+                canvas_is_focused: false,
             },
             shift: false,
             moving_object: false,
@@ -222,13 +255,14 @@ impl Component for Canvas {
         }
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
-        let mut render = true;
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let mut render = false;
         match msg {
             CanvasMessage::MouseDown { x, y } => {
                 log::debug!("{x} {y}");
                 self.selections.current_active_object = self.find_selected_object((x, y));
-                log::info!("{:?}", self.selections.current_active_object);
+                render = true;
+
                 self.moving_object = false;
                 self.original_click = (x, y);
                 if let Some(ref obj) = self.selections.current_active_object {
@@ -237,7 +271,6 @@ impl Component for Canvas {
                             self.current_link =
                                 Some(SelfLink::from_mouse(&self.nodes, *id, (x, y)).into());
                             self.temp_link = None;
-                            render = true;
                         }
                     }
                     if !matches!(obj, Object::Node(_)) || !self.shift {
@@ -254,7 +287,6 @@ impl Component for Canvas {
                                 }
                             }
                         };
-                        render = true;
                     }
                 } else if self.shift {
                     self.temp_link = Some(TemporaryLink {
@@ -270,6 +302,7 @@ impl Component for Canvas {
                 match self.selections.current_active_object {
                     None => {
                         self.nodes.push(Node::new(x, y));
+                        self.selections.node_highlights.push(None);
                         log::info!("Adding new node at {x} {y}");
                         self.selections.current_active_object =
                             Some(Object::Node(self.nodes.len() - 1));
@@ -303,6 +336,7 @@ impl Component for Canvas {
                                 self.current_link =
                                     Some(SelfLink::from_mouse(&self.nodes, id, (x, y)).into());
                                 self.temp_link = None;
+                                render = true;
                             } else if let Some(Object::Node(n)) =
                                 self.selections.current_active_object
                             {
@@ -382,12 +416,18 @@ impl Component for Canvas {
                         Some(Object::Link(l)) => {
                             if let Some(l) = self.links.get_mut(l) {
                                 let _ = l.set_anchor_point(&self.nodes, (x, y));
+                                render = true;
                             }
                         }
-                        Some(Object::Node(n)) => {
-                            if let Some(n) = self.nodes.get_mut(n) {
+                        Some(Object::Node(n_id)) => {
+                            let mut try_snap = false;
+                            if let Some(n) = self.nodes.get_mut(n_id) {
                                 n.set_anchor_point((x, y));
-                                // TODO: snap
+                                try_snap = true;
+                                render = true;
+                            }
+                            if try_snap {
+                                self.snap_node(n_id);
                             }
                         }
                         None => {}
@@ -397,18 +437,115 @@ impl Component for Canvas {
             CanvasMessage::MouseUp { .. } => {
                 self.moving_object = false;
                 if let Some(l) = self.current_link.take() {
+                    render = true;
                     self.links.push(l);
+                    self.selections.link_highlights.push(None);
                     self.selections.current_active_object =
                         Some(Object::Link(self.links.len() - 1));
                 }
 
-                self.temp_link = None;
+                if self.temp_link.take().is_some() {
+                    render = true;
+                }
             }
             CanvasMessage::KeyDown { keycode, key_text } => {
                 if keycode == 16 {
                     self.shift = true;
                 }
-                // TODO: text, delete
+                if keycode == 8 {
+                    // backspace
+                    render = true;
+                    match self.selections.current_active_object {
+                        Some(Object::Node(id)) => {
+                            if let Some(node) = self.nodes.get_mut(id) {
+                                node.text.pop();
+                            }
+                        }
+                        Some(Object::Link(id)) => {
+                            if let Some(link) = self.links.get_mut(id) {
+                                match link {
+                                    Link::Normal(NormalLink { text, .. }) => text.pop(),
+                                    Link::Start(StartLink { text, .. }) => text.pop(),
+                                    Link::ToSelf(SelfLink { text, .. }) => text.pop(),
+                                };
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+
+                if key_text.chars().count() == 1 {
+                    // letters
+                    render = true;
+                    match self.selections.current_active_object {
+                        Some(Object::Node(id)) => {
+                            if let Some(node) = self.nodes.get_mut(id) {
+                                node.text.push_str(&key_text);
+                            }
+                        }
+                        Some(Object::Link(id)) => {
+                            if let Some(link) = self.links.get_mut(id) {
+                                match link {
+                                    Link::Normal(NormalLink { text, .. }) => {
+                                        text.push_str(&key_text)
+                                    }
+                                    Link::Start(StartLink { text, .. }) => text.push_str(&key_text),
+                                    Link::ToSelf(SelfLink { text, .. }) => text.push_str(&key_text),
+                                };
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+
+                if keycode == 46 {
+                    // delete
+                    render = true;
+                    match self.selections.current_active_object {
+                        Some(Object::Link(id)) => {
+                            self.links.remove(id);
+                            self.selections.link_highlights.remove(id);
+                        }
+                        Some(Object::Node(id)) => {
+                            // Ordering of nodes is important for links:
+                            // those that link to items after this one
+                            // need to have indices shifted
+                            self.links.retain(|v| match v {
+                                Link::Normal(NormalLink { node_a, node_b, .. }) => {
+                                    id != *node_a && id != *node_b
+                                }
+                                Link::Start(StartLink { node, .. }) => id != *node,
+                                Link::ToSelf(SelfLink { node, .. }) => id != *node,
+                            });
+
+                            self.nodes.remove(id);
+                            self.selections.node_highlights.remove(id);
+
+                            self.links.iter_mut().for_each(|v| match v {
+                                Link::Normal(NormalLink { node_a, node_b, .. }) => {
+                                    if *node_a > id {
+                                        *node_a -= 1;
+                                    }
+                                    if *node_b > id {
+                                        *node_b -= 1;
+                                    }
+                                }
+                                Link::Start(StartLink { node, .. }) => {
+                                    if *node > id {
+                                        *node -= 1;
+                                    }
+                                }
+                                Link::ToSelf(SelfLink { node, .. }) => {
+                                    if *node > id {
+                                        *node -= 1;
+                                    }
+                                }
+                            });
+                        }
+                        _ => {}
+                    }
+                    self.selections.current_active_object = None;
+                }
             }
             CanvasMessage::KeyUp { keycode, .. } => {
                 if keycode == 16 {
@@ -417,6 +554,7 @@ impl Component for Canvas {
             }
             CanvasMessage::Interval => {
                 self.selections.caret_is_displayed = !self.selections.caret_is_displayed;
+                render = true;
             }
         };
 
@@ -497,15 +635,13 @@ impl Component for Canvas {
             self.on_keydown = Some(EventListener::new(&window, "keydown", move |e| {
                 let event = e.dyn_ref::<KeyboardEvent>().unwrap_throw();
                 on_keydown.emit(event.clone());
-                event.prevent_default();
             }));
             self.on_keyup = Some(EventListener::new(&window, "keyup", move |e| {
                 let event = e.dyn_ref::<KeyboardEvent>().unwrap_throw();
                 on_keyup.emit(event.clone());
-                event.prevent_default();
             }));
 
-            self.on_interval = Some(gloo::timers::callback::Interval::new(500, move || {
+            self.on_interval = Some(gloo::timers::callback::Interval::new(250, move || {
                 on_interval.emit(());
             }))
         }

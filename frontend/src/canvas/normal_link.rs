@@ -129,6 +129,7 @@ impl NormalLink {
         &self,
         nodes: &[Node],
         c: &CanvasRenderingContext2d,
+        me_is_selected: bool,
         selections: &SelectionContext,
     ) -> anyhow::Result<()> {
         let LinkStuff {
@@ -165,16 +166,39 @@ impl NormalLink {
 
         // draw text
         if has_circle {
-            let (start_angle, mut end_angle) = angles;
+            let (start_angle, end_angle) = angles;
+            let start_angle = -start_angle;
+            let mut end_angle = -end_angle;
             if start_angle < end_angle {
                 end_angle += 2.0 * PI;
             }
-            let text_angle = (start_angle + end_angle) / 2.0 + if is_reversed { 1.0 } else { 0.0 };
-            let pos = (
-                circle.pos.0 + circle.radius * text_angle.cos(),
-                circle.pos.1 + circle.radius * text_angle.sin(),
-            );
-            draw_text(c, &self.text, pos.0, pos.1, Some(text_angle), false) // TODO: selection
+            let text_angle =
+                (start_angle + end_angle) / 2.0 + PI * if is_reversed { 1.0 } else { 0.0 };
+            let text_x = circle.pos.0 + circle.radius * (-text_angle).cos();
+            let text_y = circle.pos.1 + circle.radius * (-text_angle).sin();
+
+            draw_text(
+                c,
+                &self.text,
+                text_x,
+                text_y,
+                Some(-text_angle),
+                me_is_selected,
+                selections,
+            ) // TODO: selection
+        } else {
+            let text_x = (start.0 + end.0) / 2.0;
+            let text_y = (start.1 + end.1) / 2.0;
+            let text_angle = f64::atan2(end.0 - start.0, start.1 - end.1);
+            draw_text(
+                c,
+                &self.text,
+                text_x,
+                text_y,
+                Some(text_angle + self.line_angle_adjust),
+                me_is_selected,
+                selections,
+            ) // TODO: selection
         }
         Ok(())
     }

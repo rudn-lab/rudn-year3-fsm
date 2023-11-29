@@ -1,12 +1,15 @@
 use web_sys::CanvasRenderingContext2d;
 
+use super::SelectionContext;
+
 pub fn draw_text(
     c: &CanvasRenderingContext2d,
     text: &str,
     mut x: f64,
     mut y: f64,
     angle: Option<f64>,
-    selection: bool,
+    me_is_selected: bool,
+    selections: &SelectionContext,
 ) {
     c.set_font("20px \"Times New Roman\", serif");
     let width = c.measure_text(text).unwrap().width();
@@ -31,7 +34,9 @@ pub fn draw_text(
     y = y.round();
     c.fill_text(text, x, y + 6.0).unwrap();
     let document_has_focus = gloo::utils::document().has_focus().unwrap();
-    if selection && document_has_focus {
+    if me_is_selected && selections.caret_is_displayed && document_has_focus
+    //        && selections.canvas_is_focused
+    {
         // caretVisible, canvasHasFocus,
         x += width;
         c.begin_path();

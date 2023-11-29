@@ -27,14 +27,27 @@ impl Node {
         self.y = y + self.mouse_offset_y;
     }
 
-    pub(super) fn draw(&self, c: &CanvasRenderingContext2d, selections: &SelectionContext) {
+    pub(super) fn draw(
+        &self,
+        c: &CanvasRenderingContext2d,
+        me_is_selected: bool,
+        selections: &SelectionContext,
+    ) {
         // Draw the circle
         c.begin_path();
         c.arc(self.x, self.y, Self::RADIUS, 0.0, 2.0 * PI).unwrap();
         c.stroke();
 
         // Draw the text
-        draw_text(c, &self.text, self.x, self.y, None, false); // TODO: selection
+        draw_text(
+            c,
+            &self.text,
+            self.x,
+            self.y,
+            None,
+            me_is_selected,
+            selections,
+        ); // TODO: selection
 
         // draw a double circle for an accept state
         if self.is_accept_state {

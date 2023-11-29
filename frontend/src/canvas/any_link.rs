@@ -27,12 +27,13 @@ impl Link {
         &self,
         nodes: &[Node],
         c: &CanvasRenderingContext2d,
+        me_is_selected: bool,
         selections: &SelectionContext,
     ) -> anyhow::Result<()> {
         match self {
-            Link::Normal(x) => x.draw(nodes, c, selections),
-            Link::Start(x) => x.draw(nodes, c, selections),
-            Link::ToSelf(x) => x.draw(nodes, c, selections),
+            Link::Normal(x) => x.draw(nodes, c, me_is_selected, selections),
+            Link::Start(x) => x.draw(nodes, c, me_is_selected, selections),
+            Link::ToSelf(x) => x.draw(nodes, c, me_is_selected, selections),
         }
     }
 
