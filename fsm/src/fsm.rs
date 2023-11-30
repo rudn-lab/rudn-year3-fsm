@@ -116,6 +116,109 @@ impl From<FSMOutput> for bool {
     }
 }
 
+pub struct StateMachineEvaluator {
+    fsm: StateMachine,
+    word: String,
+
+    // (node_id, char index)
+    node_cursors: Vec<(usize, String)>,
+    node_cursors_back: Vec<(usize, String)>,
+
+    // link_id, char index before, char index after)
+    link_cursors: Vec<(usize, String, String)>,
+    link_cursors_back: Vec<(usize, String, String)>,
+
+    accept: bool,
+    started: bool,
+}
+
+impl StateMachineEvaluator {
+    pub fn new(fsm: StateMachine, word: String) -> Result<Self, FSMError> {
+        if let Some(e) = fsm.check_error() {
+            return Err(e);
+        }
+        Ok(Self {
+            fsm,
+            word,
+            started: false,
+            node_cursors: vec![],
+            node_cursors_back: vec![],
+            link_cursors: vec![],
+            link_cursors_back: vec![],
+            accept: false,
+        })
+    }
+
+    pub fn node_cursors(&self) -> &Vec<(usize, String)> {
+        &self.node_cursors
+    }
+
+    pub fn link_cursors(&self) -> &Vec<(usize, String, String)> {
+        &self.link_cursors
+    }
+
+    pub fn step(&mut self) {
+        self.link_cursors_back.clear();
+        self.node_cursors_back.clear();
+
+        if !self.started {
+            self.started = true;
+            // First step: go over entry links and put link cursors there (if the prefix matches)
+            for link in self.fsm.links.iter() {
+                if let Link::StartLink { node, text, .. } = link {
+                    if self.word.starts_with(text) {
+                        log::info!("Starting eval: link into {node} with prefix {text:?}");
+                        self.link_cursors_back.push((
+                            *node,
+                            self.word.to_string(),
+                            self.word[text.len()..].to_string(),
+                        ));
+                    }
+                }
+            }
+        } else {
+            // For every link cursor, unconditionally make a node cursor
+            for (link_id, _start_word_prefix, end_word_prefix) in self.link_cursors.drain(0..) {
+                let prefix_len = end_word_prefix.len();
+                self.node_cursors_back
+                    .push((self.fsm.links[link_id].get_nodes().1, end_word_prefix));
+
+                // If the word is at an end, and it's coming into a node which accepts, then the FSM accepts too.
+                if prefix_len == 0 {
+                    let node = &self.fsm.nodes[self.fsm.links[link_id].get_nodes().1];
+                    if node.accept_state {
+                        self.accept = true;
+                    }
+                }
+            }
+
+            // For every node cursor, iterate over the links leading out of it,
+            // and if it is the prefix of the current cursor's word,
+            // then create a cursor at the corresponding link.
+            for (node_id, remaining_word) in self.node_cursors.drain(0..) {
+                for (id, link) in self
+                    .fsm
+                    .links
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, v)| v.get_nodes().0 == Some(node_id))
+                {
+                    if remaining_word.starts_with(link.get_text()) {
+                        self.link_cursors_back.push((
+                            id,
+                            remaining_word.to_string(),
+                            remaining_word[link.get_text().len()..].to_string(),
+                        ))
+                    }
+                }
+            }
+        }
+
+        std::mem::swap(&mut self.link_cursors, &mut self.link_cursors_back);
+        std::mem::swap(&mut self.node_cursors, &mut self.node_cursors_back);
+    }
+}
+
 impl StateMachine {
     pub fn evaluate(&self, word: &str) -> Result<FSMOutput, FSMError> {
         if let Some(err) = self.check_error() {

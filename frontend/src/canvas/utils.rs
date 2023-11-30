@@ -34,10 +34,11 @@ pub fn draw_text(
     y = y.round();
     c.fill_text(text, x, y + 6.0).unwrap();
     let document_has_focus = gloo::utils::document().has_focus().unwrap();
-    if me_is_selected && selections.caret_is_displayed && document_has_focus
-    //        && selections.canvas_is_focused
+    if me_is_selected
+        && selections.caret_is_displayed
+        && document_has_focus
+        && selections.canvas_is_focused
     {
-        // caretVisible, canvasHasFocus,
         x += width;
         c.begin_path();
         c.move_to(x, y - 10.0);
@@ -51,8 +52,8 @@ pub fn draw_arrow(c: &CanvasRenderingContext2d, (x, y): (f64, f64), angle: f64) 
     let dy = angle.sin();
     c.begin_path();
     c.move_to(x, y);
-    c.line_to(x - 8.0 * dx + 5.0 * dy, y - 8.0 * dy - 5.0 * dx);
-    c.line_to(x - 8.0 * dx - 5.0 * dy, y - 8.0 * dy + 5.0 * dx);
+    c.line_to(x - 12.0 * dx + 7.0 * dy, y - 12.0 * dy - 7.0 * dx);
+    c.line_to(x - 12.0 * dx - 7.0 * dy, y - 12.0 * dy + 7.0 * dx);
     c.fill();
 }
 

@@ -31,6 +31,7 @@ impl Node {
         &self,
         c: &CanvasRenderingContext2d,
         me_is_selected: bool,
+        me_is_crossed: bool,
         selections: &SelectionContext,
     ) {
         // Draw the circle
@@ -47,13 +48,24 @@ impl Node {
             None,
             me_is_selected,
             selections,
-        ); // TODO: selection
+        );
 
         // draw a double circle for an accept state
         if self.is_accept_state {
             c.begin_path();
             c.arc(self.x, self.y, Self::RADIUS - 6.0, 0.0, 2.0 * PI)
                 .unwrap();
+            c.stroke();
+        }
+
+        if me_is_crossed {
+            c.begin_path();
+            c.move_to(self.x - Self::RADIUS, self.y);
+            c.line_to(self.x + Self::RADIUS, self.y);
+            c.stroke();
+            c.begin_path();
+            c.move_to(self.x, self.y - Self::RADIUS);
+            c.line_to(self.x, self.y + Self::RADIUS);
             c.stroke();
         }
     }

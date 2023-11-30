@@ -1,10 +1,12 @@
 mod canvas;
+mod canvas_player;
 mod editor;
 mod leaderboard;
 mod profile;
 mod scripter;
 mod task;
 mod task_list;
+mod tutorial;
 
 use canvas::Canvas;
 use gloo::storage::Storage;
@@ -21,6 +23,7 @@ use crate::profile::ProfileNav;
 use crate::scripter::Scripter;
 use crate::task::TaskPage;
 use crate::task_list::HomeTaskList;
+use crate::tutorial::Tutorial;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
@@ -109,7 +112,10 @@ fn Home() -> Html {
 #[function_component]
 fn App() -> Html {
     html! {
-        <Canvas />
+        <>
+        {BIFiles::cdn()}
+        <Tutorial />
+        </>
     }
 }
 
