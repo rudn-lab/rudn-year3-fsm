@@ -49,6 +49,9 @@ pub struct CanvasPlayerProps {
     pub editable: bool,
 
     #[prop_or(true)]
+    pub auto_play: bool,
+
+    #[prop_or(true)]
     pub show_word_indicator: bool,
 
     #[prop_or(true)]
@@ -56,6 +59,12 @@ pub struct CanvasPlayerProps {
 
     #[prop_or(false)]
     pub show_steps_indicator: bool,
+
+    #[prop_or(true)]
+    pub show_transport_buttons: bool,
+
+    #[prop_or(860)]
+    pub speed: u32,
 
     pub word: AttrValue,
     pub fsm: StateMachine,
@@ -110,6 +119,27 @@ impl CanvasPlayer {
                 color_idx = color_idx % COLORS.len();
             }
 
+            // If only nodes with no exit are highlighted, then we reject.
+            if eval.link_cursors().is_empty() && self.status.is_none() {
+                let mut do_reject = true;
+                for (node_idx, remaining_string) in eval.node_cursors() {
+                    for link in self
+                        .fsm
+                        .links
+                        .iter()
+                        .filter(|l| l.get_nodes().0 == Some(*node_idx))
+                    {
+                        if remaining_string.starts_with(link.get_text()) {
+                            do_reject = false;
+                        }
+                    }
+                }
+
+                if do_reject {
+                    self.status = Some(FSMOutput::Reject);
+                }
+            }
+
             needs_reset = eval.link_cursors().is_empty() && eval.node_cursors().is_empty();
 
             self.node_highlights = Rc::new(new_nodehl);
@@ -128,6 +158,9 @@ impl CanvasPlayer {
 
         if needs_reset && self.status.is_none() {
             self.status = Some(FSMOutput::Reject);
+        }
+        if needs_reset {
+            ctx.props().on_terminate.emit(self.status.unwrap());
         }
 
         if needs_reset && ctx.props().auto_restart {
@@ -268,9 +301,17 @@ impl CanvasPlayer {
             Some(FSMOutput::Reject) => {
                 html!(<span class="text-danger fs-4" style="flex: 1;">{"REJECT"}</span>)
             }
-            None => html!(<span class="text-warning fs-4" style="flex: 1;">{"REJECT?"}</span>),
+            None => html!(<span class="text-warning fs-4" style="flex: 1;">{"UNKNOWN"}</span>),
         }
     }
+}
+
+fn duration_from_slider(slider: u32) -> Duration {
+    // Lowest(0 units) = 5000ms
+    // highest(1000 units) = 100ms
+    let inverse = 1000 - slider;
+    let time = 100 + (5 * inverse);
+    Duration::from_millis(time as u64)
 }
 
 impl Component for CanvasPlayer {
@@ -291,14 +332,30 @@ impl Component for CanvasPlayer {
             node_highlights: Default::default(),
             node_crosses: Default::default(),
             link_highlights: Default::default(),
-            auto_mode: true,
+            auto_mode: ctx.props().auto_play,
             interval: None,
-            interval_time: Duration::new(1, 0),
-            interval_slider: 820, // 1s
+            interval_time: duration_from_slider(ctx.props().speed),
+            interval_slider: ctx.props().speed,
             current_step: 0,
             max_step: (0, false),
             status: None,
         }
+    }
+
+    fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+        self.fsm = ctx.props().fsm.clone();
+        self.word = ctx.props().word.to_string();
+        self.eval = Ok(StateMachineEvaluator::new(
+            self.fsm.clone(),
+            self.word.clone(),
+        ));
+        self.reset(true);
+        // self.auto_mode = ctx.props().auto_play && ctx.props().auto_restart;
+        if ctx.props().speed != old_props.speed {
+            ctx.link()
+                .send_message(CanvasPlayerMsg::SpeedSliderChange(ctx.props().speed));
+        }
+        true
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
@@ -308,13 +365,14 @@ impl Component for CanvasPlayer {
                     node_highlights={self.node_highlights.clone()}
                     link_highlights={self.link_highlights.clone()}
                     node_crosses={self.node_crosses.clone()}
+                    immutable={!ctx.props().editable}
                     onchange={
                     ctx.link().callback(|new_fsm| {
                         CanvasPlayerMsg::NewFSMApplied(new_fsm)
                     })
                 } />
 
-                <div style="display: flex;">
+                <div style="display: flex;" class="mb-2">
                     if ctx.props().show_word_indicator {
                         {self.word_indicator()}
                     }
@@ -325,27 +383,29 @@ impl Component for CanvasPlayer {
 
                 </div>
 
-                <button class="btn btn-outline-success ml-3" onclick={
-                    ctx.link().callback(|_ev: MouseEvent| {
-                        CanvasPlayerMsg::ToggleAuto
-                    })
-                }>{
-                    if self.auto_mode {BI::PAUSE_CIRCLE_FILL} else {BI::PLAY_CIRCLE_FILL}
-                }</button>
+                if ctx.props().show_transport_buttons {
+                    <button class="btn btn-outline-success ml-3" onclick={
+                        ctx.link().callback(|_ev: MouseEvent| {
+                            CanvasPlayerMsg::ToggleAuto
+                        })
+                    }>{
+                        if self.auto_mode {BI::PAUSE_CIRCLE_FILL} else {BI::PLAY_CIRCLE_FILL}
+                    }</button>
 
 
-                <div class="btn-group mx-2">
-                    <button class="btn btn-outline-danger" onclick={
-                        ctx.link().callback(|_ev: MouseEvent| {
-                            CanvasPlayerMsg::ResetFSM
-                        })
-                    }>{BI::ARROW_REPEAT}</button>
-                    <button class="btn btn-outline-success" onclick={
-                        ctx.link().callback(|_ev: MouseEvent| {
-                            CanvasPlayerMsg::AdvanceFSM
-                        })
-                    }>{BI::FAST_FORWARD_FILL}</button>
-                </div>
+                    <div class="btn-group mx-2">
+                        <button class="btn btn-outline-danger" onclick={
+                            ctx.link().callback(|_ev: MouseEvent| {
+                                CanvasPlayerMsg::ResetFSM
+                            })
+                        }>{BI::ARROW_REPEAT}</button>
+                        <button class="btn btn-outline-primary" onclick={
+                            ctx.link().callback(|_ev: MouseEvent| {
+                                CanvasPlayerMsg::AdvanceFSM
+                            })
+                        }>{BI::FAST_FORWARD_FILL}</button>
+                    </div>
+                }
 
                 if ctx.props().speed_changeable {
                     <input class="form-input mx-2" type="range" min="0" max="1000" value={self.interval_slider.to_string()} disabled={!self.auto_mode} oninput={
@@ -374,16 +434,13 @@ impl Component for CanvasPlayer {
                 }
             }
             CanvasPlayerMsg::SpeedSliderChange(value) => {
-                // Lowest(0 units) = 5000ms
-                // highest(1000 units) = 100ms
-                let inverse = 1000 - value;
-                let time = 100 + (5 * inverse);
                 self.interval_slider = value;
+                self.interval_time = duration_from_slider(value);
+                let time = self.interval_time.as_millis() as u32;
                 let send_interval = ctx.link().callback(|_| CanvasPlayerMsg::Interval);
                 self.interval = Some(gloo::timers::callback::Interval::new(time, move || {
                     send_interval.emit(());
                 }));
-                self.interval_time = Duration::from_millis(time as u64);
             }
             CanvasPlayerMsg::NewFSMApplied(fsm) => {
                 self.fsm = fsm;
@@ -406,10 +463,10 @@ impl Component for CanvasPlayer {
     fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
         if first_render {
             let send_interval = ctx.link().callback(|_| CanvasPlayerMsg::Interval);
-            self.interval = Some(gloo::timers::callback::Interval::new(1000, move || {
+            let time = self.interval_time.as_millis() as u32;
+            self.interval = Some(gloo::timers::callback::Interval::new(time, move || {
                 send_interval.emit(());
             }));
-            self.interval_time = Duration::from_millis(1000);
         }
     }
 }

@@ -40,7 +40,7 @@ pub fn task_page(props: &TaskPageProps) -> Html {
 
 #[wasm_bindgen::prelude::wasm_bindgen]
 extern "C" {
-    fn randfloat() -> f64;
+    pub fn randfloat() -> f64;
 }
 
 #[function_component(TaskPageInner)]
