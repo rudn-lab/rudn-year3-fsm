@@ -63,6 +63,9 @@ pub struct CanvasPlayerProps {
     #[prop_or(true)]
     pub show_transport_buttons: bool,
 
+    #[prop_or(false)]
+    pub play_on_change: bool,
+
     #[prop_or(860)]
     pub speed: u32,
 
@@ -92,6 +95,10 @@ impl CanvasPlayer {
     fn step(&mut self, ctx: &Context<Self>) {
         let mut needs_reset = false;
         let mut complexity = 0;
+        if self.current_step == 0 {
+            self.status = None;
+        }
+
         if let Ok(Ok(eval)) = &mut self.eval {
             log::debug!("step!");
             eval.step();
@@ -187,7 +194,6 @@ impl CanvasPlayer {
         self.node_highlights = Default::default();
         self.node_crosses = Default::default();
         self.current_step = 0;
-        self.status = None;
         if changed {
             self.max_step = (0, false);
         }
@@ -197,6 +203,12 @@ impl CanvasPlayer {
         match &self.eval {
             Ok(Ok(eval)) => {
                 let word_len = self.word.chars().count();
+                if word_len == 0 {
+                    return html!(<span style="display: inline-block; flex: 1;">
+                        <span class="badge text-bg-primary fs-3 font-monospace">{"ε"}</span>
+                        </span>
+                    );
+                }
 
                 let mut before_char_cursors = vec![];
                 let mut final_char_cursors = vec![];
@@ -350,7 +362,11 @@ impl Component for CanvasPlayer {
             self.word.clone(),
         ));
         self.reset(true);
+        if ctx.props().word != old_props.word || ctx.props().fsm != old_props.fsm {
+            self.status = None;
+        }
         // self.auto_mode = ctx.props().auto_play && ctx.props().auto_restart;
+        self.auto_mode = self.auto_mode || ctx.props().play_on_change;
         if ctx.props().speed != old_props.speed {
             ctx.link()
                 .send_message(CanvasPlayerMsg::SpeedSliderChange(ctx.props().speed));

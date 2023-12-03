@@ -2,7 +2,7 @@ use web_sys::CanvasRenderingContext2d;
 
 use super::SelectionContext;
 
-pub fn draw_text(
+pub(super) fn draw_text(
     c: &CanvasRenderingContext2d,
     text: &str,
     mut x: f64,

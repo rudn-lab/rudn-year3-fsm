@@ -2,23 +2,22 @@ use fsm::fsm::StateMachine;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use shadow_clone::shadow_clone;
+use wasm_bindgen::JsCast;
+use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_autoprops::autoprops_component;
 use yew_bootstrap::component::{Container, Lead};
 
-use crate::{canvas::Canvas, canvas_player::CanvasPlayer, task::randfloat};
+use crate::{canvas_player::CanvasPlayer, task::randfloat};
 
 // {"nodes":[{"x":131,"y":98,"text":"","isAcceptState":false},{"x":189,"y":172,"text":"","isAcceptState":false},{"x":374,"y":98,"text":"","isAcceptState":false},{"x":627,"y":98,"text":"","isAcceptState":false},{"x":690,"y":172,"text":"","isAcceptState":false},{"x":437,"y":172,"text":"","isAcceptState":false},{"x":131,"y":293,"text":"","isAcceptState":false},{"x":131,"y":458,"text":"","isAcceptState":false},{"x":189,"y":528,"text":"","isAcceptState":false},{"x":189,"y":357,"text":"","isAcceptState":false},{"x":374,"y":293,"text":"","isAcceptState":false},{"x":627,"y":293,"text":"","isAcceptState":false},{"x":437,"y":357,"text":"","isAcceptState":false},{"x":690,"y":357,"text":"","isAcceptState":false},{"x":374,"y":458,"text":"","isAcceptState":false},{"x":437,"y":528,"text":"","isAcceptState":false},{"x":627,"y":458,"text":"","isAcceptState":false},{"x":690,"y":528,"text":"","isAcceptState":false}],"links":[{"type":"Link","nodeA":0,"nodeB":2,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":2,"nodeB":3,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":0,"nodeB":1,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5470588235294116,"perpendicularPart":36.50237703782816},{"type":"Link","nodeA":1,"nodeB":0,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.595022624434389,"perpendicularPart":0.0},{"type":"Link","nodeA":2,"nodeB":5,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.40158814187400743,"perpendicularPart":26.660385928787488},{"type":"Link","nodeA":5,"nodeB":2,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":3,"nodeB":4,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.46077289571201696,"perpendicularPart":27.61731988918009},{"type":"Link","nodeA":4,"nodeB":3,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":6,"nodeB":9,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5160857908847185,"perpendicularPart":28.250127523496843},{"type":"Link","nodeA":9,"nodeB":6,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5576407506702413,"perpendicularPart":0.0},{"type":"Link","nodeA":10,"nodeB":12,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.47451952882827025,"perpendicularPart":23.706829462714104},{"type":"Link","nodeA":12,"nodeB":10,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":11,"nodeB":13,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.611764705882353,"perpendicularPart":22.343837155321587},{"type":"Link","nodeA":13,"nodeB":11,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":7,"nodeB":8,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.531703775411423,"perpendicularPart":23.16664867524449},{"type":"Link","nodeA":8,"nodeB":7,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":14,"nodeB":15,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.6748224151539068,"perpendicularPart":23.562424436035172},{"type":"Link","nodeA":15,"nodeB":14,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":16,"nodeB":17,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5895816890292028,"perpendicularPart":32.481954191001165},{"type":"Link","nodeA":17,"nodeB":16,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":6,"nodeB":10,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":10,"nodeB":11,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":7,"nodeB":14,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":14,"nodeB":16,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":17,"nodeB":15,"text":"2","lineAngleAdjust":3.141592653589793,"parallelPart":0.5612648221343873,"perpendicularPart":-29.0},{"type":"Link","nodeA":15,"nodeB":8,"text":"2","lineAngleAdjust":3.141592653589793,"parallelPart":0.2903225806451613,"perpendicularPart":-25.0},{"type":"Link","nodeA":13,"nodeB":12,"text":"2","lineAngleAdjust":3.141592653589793,"parallelPart":0.5019762845849802,"perpendicularPart":-29.0},{"type":"Link","nodeA":12,"nodeB":9,"text":"2","lineAngleAdjust":3.141592653589793,"parallelPart":0.5040322580645161,"perpendicularPart":-31.0},{"type":"Link","nodeA":4,"nodeB":5,"text":"2","lineAngleAdjust":3.141592653589793,"parallelPart":0.6837944664031621,"perpendicularPart":-23.0},{"type":"Link","nodeA":5,"nodeB":1,"text":"2","lineAngleAdjust":3.141592653589793,"parallelPart":0.5040322580645161,"perpendicularPart":-23.0},{"type":"Link","nodeA":0,"nodeB":6,"text":"3","lineAngleAdjust":0.0,"parallelPart":0.7487179487179487,"perpendicularPart":28.0},{"type":"Link","nodeA":10,"nodeB":14,"text":"3","lineAngleAdjust":0.0,"parallelPart":0.6424242424242425,"perpendicularPart":21.0},{"type":"Link","nodeA":16,"nodeB":3,"text":"3","lineAngleAdjust":0.0,"parallelPart":0.14444444444444443,"perpendicularPart":86.0}]}
-
-fn get_sample_fsm() -> StateMachine {
-    serde_json::from_str(r#"{"nodes":[{"x":145,"y":207,"text":"","isAcceptState":true},{"x":145,"y":448,"text":"","isAcceptState":false},{"x":512,"y":448,"text":"","isAcceptState":true},{"x":512,"y":207,"text":"","isAcceptState":false}],"links":[{"type":"StartLink","node":0,"text":"","deltaX":-76,"deltaY":-105},{"type":"Link","nodeA":0,"nodeB":3,"text":"1","lineAngleAdjust":3.141592653589793,"parallelPart":0.5258855585831063,"perpendicularPart":-36.0},{"type":"Link","nodeA":3,"nodeB":0,"text":"1","lineAngleAdjust":3.141592653589793,"parallelPart":0.5858310626702997,"perpendicularPart":-29.0},{"type":"Link","nodeA":1,"nodeB":2,"text":"1","lineAngleAdjust":3.141592653589793,"parallelPart":0.7329700272479565,"perpendicularPart":-27.0},{"type":"Link","nodeA":2,"nodeB":1,"text":"1","lineAngleAdjust":3.141592653589793,"parallelPart":0.6158038147138964,"perpendicularPart":-42.0},{"type":"Link","nodeA":0,"nodeB":1,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.6763485477178424,"perpendicularPart":31.0},{"type":"Link","nodeA":1,"nodeB":0,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5062240663900415,"perpendicularPart":31.0},{"type":"Link","nodeA":3,"nodeB":2,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.7427385892116183,"perpendicularPart":25.0},{"type":"Link","nodeA":2,"nodeB":3,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.6929460580912863,"perpendicularPart":23.0}]}"#).unwrap()
-}
 
 #[function_component]
 fn SampleFSMPlayer() -> Html {
     let word = use_state(|| String::from("1101012"));
     let fsm: StateMachine = serde_json::from_str(
-        r#"{"nodes":[{"x":62,"y":70,"text":"","isAcceptState":false},{"x":172,"y":70,"text":"","isAcceptState":false},{"x":286,"y":70,"text":"","isAcceptState":false},{"x":399,"y":70,"text":"","isAcceptState":false},{"x":506,"y":70,"text":"","isAcceptState":false},{"x":727,"y":70,"text":"","isAcceptState":false},{"x":62,"y":181,"text":"","isAcceptState":false},{"x":62,"y":294,"text":"","isAcceptState":false},{"x":62,"y":405,"text":"","isAcceptState":false},{"x":62,"y":523,"text":"","isAcceptState":false},{"x":172,"y":523,"text":"","isAcceptState":false},{"x":286,"y":523,"text":"","isAcceptState":false},{"x":399,"y":523,"text":"","isAcceptState":false},{"x":506,"y":523,"text":"","isAcceptState":false},{"x":727,"y":523,"text":"","isAcceptState":false},{"x":172,"y":405,"text":"","isAcceptState":false},{"x":172,"y":294,"text":"","isAcceptState":false},{"x":172,"y":181,"text":"","isAcceptState":false},{"x":286,"y":181,"text":"","isAcceptState":false},{"x":286,"y":294,"text":"","isAcceptState":false},{"x":286,"y":405,"text":"","isAcceptState":false},{"x":399,"y":405,"text":"","isAcceptState":false},{"x":399,"y":294,"text":"","isAcceptState":false},{"x":399,"y":181,"text":"","isAcceptState":false},{"x":506,"y":181,"text":"","isAcceptState":false},{"x":506,"y":294,"text":"","isAcceptState":false},{"x":506,"y":405,"text":"","isAcceptState":false},{"x":727,"y":181,"text":"","isAcceptState":false},{"x":727,"y":294,"text":"","isAcceptState":false},{"x":727,"y":405,"text":"","isAcceptState":false},{"x":62,"y":597,"text":"","isAcceptState":false},{"x":172,"y":597,"text":"","isAcceptState":false},{"x":286,"y":597,"text":"","isAcceptState":false},{"x":399,"y":597,"text":"","isAcceptState":false},{"x":506,"y":597,"text":"","isAcceptState":false}],"links":[{"type":"StartLink","node":0,"text":"","deltaX":-39,"deltaY":-49},{"type":"Link","nodeA":0,"nodeB":1,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":1,"nodeB":2,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":2,"nodeB":3,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":3,"nodeB":4,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":0,"nodeB":6,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":6,"nodeB":7,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":7,"nodeB":8,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":8,"nodeB":9,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":9,"nodeB":10,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":10,"nodeB":11,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":11,"nodeB":12,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":12,"nodeB":13,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":6,"nodeB":17,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":17,"nodeB":18,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":18,"nodeB":23,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":23,"nodeB":24,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":4,"nodeB":24,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":3,"nodeB":23,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":2,"nodeB":18,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":1,"nodeB":17,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":17,"nodeB":16,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":18,"nodeB":19,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":23,"nodeB":22,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":24,"nodeB":25,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":16,"nodeB":15,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":19,"nodeB":20,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":22,"nodeB":21,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":25,"nodeB":26,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":15,"nodeB":10,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":20,"nodeB":11,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":21,"nodeB":12,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":26,"nodeB":13,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":8,"nodeB":15,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":15,"nodeB":20,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":20,"nodeB":21,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":21,"nodeB":26,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":22,"nodeB":25,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":19,"nodeB":22,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":16,"nodeB":19,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":7,"nodeB":16,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":13,"nodeB":14,"text":"2","lineAngleAdjust":3.141592653589793,"parallelPart":0.5203619909502263,"perpendicularPart":0.0},{"type":"Link","nodeA":26,"nodeB":29,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":25,"nodeB":28,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":24,"nodeB":27,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":4,"nodeB":5,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.37104072398190047,"perpendicularPart":0.0},{"type":"Link","nodeA":14,"nodeB":29,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":29,"nodeB":28,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":28,"nodeB":27,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":27,"nodeB":5,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":5,"nodeB":0,"text":"","lineAngleAdjust":0.0,"parallelPart":0.20601503759398496,"perpendicularPart":39.0},{"type":"Link","nodeA":30,"nodeB":31,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":9,"nodeB":30,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":10,"nodeB":31,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":11,"nodeB":32,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":12,"nodeB":33,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":13,"nodeB":34,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":31,"nodeB":32,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":32,"nodeB":33,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":33,"nodeB":34,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":34,"nodeB":14,"text":"","lineAngleAdjust":0.0,"parallelPart":0.7163134930132371,"perpendicularPart":17.935289622444646}]}"#,
+        r#"
+{"nodes":[{"x":62,"y":70,"text":"","isAcceptState":false},{"x":172,"y":70,"text":"","isAcceptState":false},{"x":286,"y":70,"text":"","isAcceptState":false},{"x":399,"y":70,"text":"","isAcceptState":false},{"x":506,"y":70,"text":"","isAcceptState":false},{"x":727,"y":70,"text":"","isAcceptState":false},{"x":62,"y":181,"text":"","isAcceptState":false},{"x":62,"y":294,"text":"","isAcceptState":false},{"x":62,"y":405,"text":"","isAcceptState":false},{"x":62,"y":523,"text":"","isAcceptState":false},{"x":172,"y":523,"text":"","isAcceptState":false},{"x":286,"y":523,"text":"","isAcceptState":false},{"x":399,"y":523,"text":"","isAcceptState":false},{"x":506,"y":523,"text":"","isAcceptState":false},{"x":727,"y":523,"text":"","isAcceptState":false},{"x":172,"y":405,"text":"","isAcceptState":false},{"x":172,"y":294,"text":"","isAcceptState":false},{"x":172,"y":181,"text":"","isAcceptState":false},{"x":286,"y":181,"text":"","isAcceptState":false},{"x":286,"y":294,"text":"","isAcceptState":false},{"x":286,"y":405,"text":"","isAcceptState":false},{"x":399,"y":405,"text":"","isAcceptState":false},{"x":399,"y":294,"text":"","isAcceptState":false},{"x":399,"y":181,"text":"","isAcceptState":false},{"x":506,"y":181,"text":"","isAcceptState":false},{"x":506,"y":294,"text":"","isAcceptState":false},{"x":506,"y":405,"text":"","isAcceptState":false},{"x":727,"y":181,"text":"","isAcceptState":false},{"x":727,"y":294,"text":"","isAcceptState":false},{"x":727,"y":405,"text":"","isAcceptState":false},{"x":62,"y":597,"text":"","isAcceptState":false},{"x":172,"y":597,"text":"","isAcceptState":false},{"x":286,"y":597,"text":"","isAcceptState":false},{"x":399,"y":597,"text":"","isAcceptState":false},{"x":506,"y":597,"text":"","isAcceptState":false}],"links":[{"type":"StartLink","node":0,"text":"","deltaX":-39,"deltaY":-49},{"type":"Link","nodeA":0,"nodeB":1,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":1,"nodeB":2,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":2,"nodeB":3,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":3,"nodeB":4,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":0,"nodeB":6,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":6,"nodeB":7,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":7,"nodeB":8,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":8,"nodeB":9,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":9,"nodeB":10,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":10,"nodeB":11,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":11,"nodeB":12,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":12,"nodeB":13,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":6,"nodeB":17,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":17,"nodeB":18,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":18,"nodeB":23,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":23,"nodeB":24,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":4,"nodeB":24,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":3,"nodeB":23,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":2,"nodeB":18,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":1,"nodeB":17,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":17,"nodeB":16,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":18,"nodeB":19,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":23,"nodeB":22,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":24,"nodeB":25,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":16,"nodeB":15,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":19,"nodeB":20,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":22,"nodeB":21,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":25,"nodeB":26,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":15,"nodeB":10,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":20,"nodeB":11,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":21,"nodeB":12,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":26,"nodeB":13,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":8,"nodeB":15,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":15,"nodeB":20,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":20,"nodeB":21,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":21,"nodeB":26,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":22,"nodeB":25,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":19,"nodeB":22,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":16,"nodeB":19,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":7,"nodeB":16,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":13,"nodeB":14,"text":"2","lineAngleAdjust":3.141592653589793,"parallelPart":0.5203619909502263,"perpendicularPart":0.0},{"type":"Link","nodeA":26,"nodeB":29,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":25,"nodeB":28,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":24,"nodeB":27,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":4,"nodeB":5,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.37104072398190047,"perpendicularPart":0.0},{"type":"Link","nodeA":14,"nodeB":29,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":29,"nodeB":28,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":28,"nodeB":27,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":27,"nodeB":5,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":5,"nodeB":0,"text":"","lineAngleAdjust":0.0,"parallelPart":0.20601503759398496,"perpendicularPart":39.0},{"type":"Link","nodeA":30,"nodeB":31,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":9,"nodeB":30,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":10,"nodeB":31,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":11,"nodeB":32,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":12,"nodeB":33,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":31,"nodeB":32,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":32,"nodeB":33,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":33,"nodeB":34,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":34,"nodeB":14,"text":"","lineAngleAdjust":0.0,"parallelPart":0.7163134930132371,"perpendicularPart":17.935289622444646}]}        "#,
     ).unwrap();
 
     let on_terminate = {
@@ -106,6 +105,158 @@ fn ZeroZeroOrZeroOneFSM() -> Html {
     )
 }
 
+#[function_component]
+fn AsThenBsFSM() -> Html {
+    let word = use_state(|| String::from("AAABBB"));
+    let is_running = use_state(|| true);
+    let fsm: StateMachine = serde_json::from_str(
+        r#"
+        {"nodes":[{"x":226,"y":298,"text":"","isAcceptState":false},{"x":481,"y":298,"text":"","isAcceptState":true}],"links":[{"type":"SelfLink","node":0,"text":"A","anchorAngle":-1.5707963267948966},{"type":"StartLink","node":0,"text":"","deltaX":-123,"deltaY":0},{"type":"Link","nodeA":0,"nodeB":1,"text":"B","lineAngleAdjust":3.141592653589793,"parallelPart":0.5567765567765568,"perpendicularPart":-37.0},{"type":"SelfLink","node":1,"text":"B","anchorAngle":-1.5707963267948966}]}        "#,
+    )
+    .unwrap();
+
+    let on_terminate = {
+        shadow_clone!(is_running);
+        move |_outcome| {
+            is_running.set(false);
+        }
+    };
+
+    let oninput = {
+        shadow_clone!(word);
+        move |ev: InputEvent| {
+            let target: HtmlInputElement = ev.target().unwrap().dyn_into().unwrap();
+            word.set(target.value());
+        }
+    };
+
+    let onclick = {
+        shadow_clone!(is_running);
+        move |ev: MouseEvent| {
+            ev.prevent_default();
+            is_running.set(true);
+        }
+    };
+
+    html!(
+        <>
+            <CanvasPlayer word={(&*word).clone()}
+            fsm={fsm.clone()} editable={false} speed_changeable={true}
+            auto_restart={false} show_status_indicator={true} show_transport_buttons={true}
+            pause_on_restart={true} play_on_change={*is_running}
+            speed={860}
+            {on_terminate}/>
+            <form class="input-group my-2" style="width: 800px; margin: 0 auto;">
+                <span class="input-group-text">{"Введите слово для проверки: "}</span>
+                <input class="form-control" disabled={*is_running} value={(&*word).clone()} {oninput} />
+                <input class="btn btn-success" disabled={*is_running} value="Тест!" type="submit" {onclick} />
+            </form>
+        </>
+    )
+}
+
+#[function_component]
+fn AsBsFourFSM() -> Html {
+    let word = use_state(|| String::from("AAABBB"));
+    let is_running = use_state(|| true);
+    let fsm: StateMachine = serde_json::from_str(
+        r#"
+{"nodes":[{"x":161,"y":470,"text":"","isAcceptState":false},{"x":629,"y":470,"text":"","isAcceptState":true},{"x":197,"y":369,"text":"","isAcceptState":false},{"x":240,"y":274,"text":"","isAcceptState":false},{"x":576,"y":369,"text":"","isAcceptState":false},{"x":515,"y":274,"text":"","isAcceptState":false},{"x":473,"y":193,"text":"","isAcceptState":false},{"x":296,"y":193,"text":"","isAcceptState":false},{"x":329,"y":117,"text":"","isAcceptState":false},{"x":426,"y":117,"text":"","isAcceptState":false},{"x":60,"y":470,"text":"","isAcceptState":false}],"links":[{"type":"Link","nodeA":0,"nodeB":2,"text":"A","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":2,"nodeB":3,"text":"A","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":3,"nodeB":7,"text":"A","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":7,"nodeB":8,"text":"A","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":9,"nodeB":6,"text":"B","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":6,"nodeB":5,"text":"B","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":5,"nodeB":4,"text":"B","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":4,"nodeB":1,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":0,"nodeB":4,"text":"B","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":2,"nodeB":5,"text":"B","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":3,"nodeB":6,"text":"B","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":7,"nodeB":9,"text":"B","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"StartLink","node":10,"text":"","deltaX":0,"deltaY":-110},{"type":"Link","nodeA":10,"nodeB":0,"text":"A","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0}]}
+        "#,
+    )
+    .unwrap();
+
+    let on_terminate = {
+        shadow_clone!(is_running);
+        move |_outcome| {
+            is_running.set(false);
+        }
+    };
+
+    let oninput = {
+        shadow_clone!(word);
+        move |ev: InputEvent| {
+            let target: HtmlInputElement = ev.target().unwrap().dyn_into().unwrap();
+            word.set(target.value());
+        }
+    };
+
+    let onclick = {
+        shadow_clone!(is_running);
+        move |ev: MouseEvent| {
+            ev.prevent_default();
+            is_running.set(true);
+        }
+    };
+
+    html!(
+        <>
+            <CanvasPlayer word={(&*word).clone()}
+            fsm={fsm.clone()} editable={false} speed_changeable={true}
+            auto_restart={false} show_status_indicator={true} show_transport_buttons={true}
+            pause_on_restart={true} play_on_change={*is_running}
+            speed={860}
+            {on_terminate}/>
+            <form class="input-group my-2" style="width: 800px; margin: 0 auto;">
+                <span class="input-group-text">{"Введите слово для проверки: "}</span>
+                <input class="form-control" disabled={*is_running} value={(&*word).clone()} {oninput} />
+                <input class="btn btn-success" disabled={*is_running} value="Тест!" type="submit" {onclick} />
+            </form>
+        </>
+    )
+}
+
+#[function_component]
+fn EmailValidatorFSM() -> Html {
+    let word = use_state(|| String::from("dabadab@feefeb.space"));
+    let is_running = use_state(|| true);
+    let fsm: StateMachine = serde_json::from_str(
+        r#"
+{"nodes":[{"x":74,"y":91,"text":"","isAcceptState":false},{"x":208,"y":91,"text":"user","isAcceptState":false},{"x":416,"y":91,"text":"","isAcceptState":false},{"x":539,"y":91,"text":"site","isAcceptState":false},{"x":135,"y":248,"text":"","isAcceptState":false},{"x":539,"y":248,"text":"dot","isAcceptState":false},{"x":135,"y":407,"text":"","isAcceptState":false},{"x":244,"y":314,"text":"","isAcceptState":true},{"x":305,"y":407,"text":"","isAcceptState":false},{"x":230,"y":491,"text":"","isAcceptState":true},{"x":87,"y":524,"text":"","isAcceptState":true},{"x":446,"y":331,"text":"","isAcceptState":true},{"x":435,"y":491,"text":"","isAcceptState":true}],"links":[{"type":"StartLink","node":0,"text":"","deltaX":-59,"deltaY":0},{"type":"Link","nodeA":0,"nodeB":1,"text":"a","lineAngleAdjust":3.141592653589793,"parallelPart":0.7647058823529411,"perpendicularPart":-56.0},{"type":"Link","nodeA":0,"nodeB":1,"text":"b","lineAngleAdjust":3.141592653589793,"parallelPart":0.5588235294117647,"perpendicularPart":-37.0},{"type":"Link","nodeA":0,"nodeB":1,"text":"c","lineAngleAdjust":3.141592653589793,"parallelPart":0.5588235294117647,"perpendicularPart":-14.0},{"type":"Link","nodeA":0,"nodeB":1,"text":"d","lineAngleAdjust":0.0,"parallelPart":0.5147058823529411,"perpendicularPart":19.0},{"type":"Link","nodeA":0,"nodeB":1,"text":"e","lineAngleAdjust":0.0,"parallelPart":0.6764705882352942,"perpendicularPart":40.0},{"type":"Link","nodeA":0,"nodeB":1,"text":"f","lineAngleAdjust":0.0,"parallelPart":0.6617647058823529,"perpendicularPart":67.0},{"type":"SelfLink","node":1,"text":"a","anchorAngle":1.740163983875466},{"type":"SelfLink","node":1,"text":"b","anchorAngle":1.3352513460740334},{"type":"SelfLink","node":1,"text":"c","anchorAngle":1.0360703319417248},{"type":"SelfLink","node":1,"text":"d","anchorAngle":-1.7539071440573808},{"type":"SelfLink","node":1,"text":"e","anchorAngle":-1.1839206090638683},{"type":"SelfLink","node":1,"text":"f","anchorAngle":-0.65788860518221},{"type":"Link","nodeA":1,"nodeB":2,"text":"@","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":2,"nodeB":3,"text":"a","lineAngleAdjust":3.141592653589793,"parallelPart":0.6754385964912281,"perpendicularPart":-58.0},{"type":"Link","nodeA":2,"nodeB":3,"text":"b","lineAngleAdjust":3.141592653589793,"parallelPart":0.5877192982456141,"perpendicularPart":-34.0},{"type":"Link","nodeA":2,"nodeB":3,"text":"c","lineAngleAdjust":3.141592653589793,"parallelPart":0.49122807017543857,"perpendicularPart":-14.0},{"type":"Link","nodeA":2,"nodeB":3,"text":"d","lineAngleAdjust":0.0,"parallelPart":0.7017543859649122,"perpendicularPart":18.0},{"type":"Link","nodeA":2,"nodeB":3,"text":"e","lineAngleAdjust":0.0,"parallelPart":0.8421052631578947,"perpendicularPart":35.0},{"type":"Link","nodeA":2,"nodeB":3,"text":"f","lineAngleAdjust":0.0,"parallelPart":0.9385964912280702,"perpendicularPart":54.0},{"type":"Link","nodeA":3,"nodeB":5,"text":".","lineAngleAdjust":3.141592653589793,"parallelPart":0.7261146496815286,"perpendicularPart":-128.0},{"type":"Link","nodeA":5,"nodeB":4,"text":"","lineAngleAdjust":0.0,"parallelPart":0.836603886696308,"perpendicularPart":0.0},{"type":"Link","nodeA":4,"nodeB":6,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"SelfLink","node":3,"text":"b","anchorAngle":-1.2419654938113762},{"type":"SelfLink","node":3,"text":"a","anchorAngle":-1.797069688822532},{"type":"SelfLink","node":3,"text":"c","anchorAngle":-0.5763752205911837},{"type":"SelfLink","node":3,"text":"d","anchorAngle":0.0},{"type":"SelfLink","node":3,"text":"e","anchorAngle":0.6078019961139605},{"type":"SelfLink","node":3,"text":"f","anchorAngle":0.9025069079643124},{"type":"Link","nodeA":6,"nodeB":7,"text":"ru","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":6,"nodeB":8,"text":"s","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":6,"nodeB":9,"text":"com","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":6,"nodeB":10,"text":"net","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":8,"nodeB":11,"text":"u","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":8,"nodeB":12,"text":"pace","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0}]}
+        "#,
+    )
+    .unwrap();
+
+    let on_terminate = {
+        shadow_clone!(is_running);
+        move |_outcome| {
+            is_running.set(false);
+        }
+    };
+
+    let oninput = {
+        shadow_clone!(word);
+        move |ev: InputEvent| {
+            let target: HtmlInputElement = ev.target().unwrap().dyn_into().unwrap();
+            word.set(target.value());
+        }
+    };
+
+    let onclick = {
+        shadow_clone!(is_running);
+        move |ev: MouseEvent| {
+            ev.prevent_default();
+            is_running.set(true);
+        }
+    };
+
+    html!(
+        <>
+            <CanvasPlayer word={(&*word).clone()}
+            fsm={fsm.clone()} editable={false} speed_changeable={true}
+            auto_restart={false} show_status_indicator={true} show_transport_buttons={true}
+            pause_on_restart={true} play_on_change={*is_running}
+            speed={860}
+            {on_terminate}/>
+            <form class="input-group my-2" style="width: 800px; margin: 0 auto;">
+                <span class="input-group-text">{"Введите слово для проверки: "}</span>
+                <input class="form-control" disabled={*is_running} value={(&*word).clone()} {oninput} />
+                <input class="btn btn-success" disabled={*is_running} value="Тест!" type="submit" {onclick} />
+            </form>
+        </>
+    )
+}
+
 #[autoprops_component]
 fn WordDisplay(word: AttrValue) -> Html {
     if word.is_empty() {
@@ -159,7 +310,8 @@ pub fn tutorial() -> Html {
                     </a>
                     {" существуют четыре категории формальных языков по сложности. "}
                     <em>{"Регулярные языки"}</em>{" — самые простые из них. "}
-                    {"Их могут распознавать "}<em>{"конечные автоматы."}</em>
+                    {"Их могут распознавать "}<em>{"конечные автоматы. "}</em>
+                    {"Когда мы говорим, что конечный автомат распознает язык, это значит, что он всегда дает правильный ответ — слово является ли частью языка или нет."}
                 </p>
                 <hr />
 
@@ -190,6 +342,47 @@ pub fn tutorial() -> Html {
                     <li>{"Если у автомата закончилась строка, и он оказался в обычном кружочке, то он отвергает строку;"}</li>
                     <li>{"Если автомат, посередине строки, оказался в таком состоянии, что у него нет пути дальше, то он также отвергает строку."}</li>
                 </ul>
+
+                <h2>{"3. Применения автоматов"}</h2>
+
+                <p>{"Конечные автоматы могут быть использованы для распознания любого языка, для которого требуется конечное количество памяти."}</p>
+                <p>
+                {"Например, легко можно распознать язык таких слов, которые состоят из какого-то количества букв "}
+                <WordDisplay word="A" />
+                {", за которыми идет какое-то количество букв "}<WordDisplay word="B" />
+                {" — для этого нужно лишь хранить одно значение (мы сейчас ждем букву "}<WordDisplay word="A" />{" или "}<WordDisplay word="B" />{"), "}
+                {"и конечный автомат для этого языка требует всего двух состояний."}
+                </p>
+
+                <AsThenBsFSM />
+
+                <p>{"С другой стороны, нельзя построить конечный автомат, который будет принимать последовательность букв "}<WordDisplay word="A" />{", "}
+                {"а затем последовтаельность букв "}<WordDisplay word="B" /><em>{"такой же длины. "}</em>
+                {"Это потому, что теперь нужно хранить количество букв "}<WordDisplay word="A" />{", которые мы видели. "}
+                {"Это количество может быть очень большим; в теории, таким большим, что в нашем компьютере не хватит места, чтобы хранить это число. "}
+                {"Из-за этого такой язык невозможно распознавать конечным автоматом."}
+                </p>
+
+                <p>{"Как демонстрация этого, вот автомат, который распознает такие последовательности, но с длиной не больше 8. "}
+                {"Чтобы он распознавал любые такие слова, нужно, чтобы он таким же образом был продлен до бесконечности — "}
+                {"но тогда он перестанет быть "}<em>{"конечным"}</em>{" автоматом."}
+                </p>
+
+                <AsBsFourFSM />
+
+                <p>{"По этой же причине невозможно сделать конечный автомат, который распознает правильные скобочные последовательности: там также требуется хранить количество скобок, которые нужно закрыть, что запрещено."}</p>
+
+                <p>{"Конечные автоматы задают регулярные языки, которые также задаются "}<em>{"регулярными выражениями"}</em>
+                {" — они часто полезны в программировании. Например, они используются в валидации текстовых полей; например, email-адресов."}</p>
+                <p>{"К сожалению, эта среда работы с конечными автоматами не позволяет сделать стрелочку, которая принимает \"любую одну букву\". "}
+                {"Поэтому мы ограничим набор допустимых букв: пусть имя пользователя и домен могут состоять из букв от "}<WordDisplay word="a" />
+                {" до "}<WordDisplay word="f" />{", и домен может заканчиваться только на .com, .ru, .su, .net или .space."}</p>
+                <p>{"Регулярное выражение для такого правила валидации будет выглядеть вот так: "}<code>{"[a-f]+@[a-f]+\\.(com|ru|net|(s(u|pace)))"}</code>{"; "}
+                {"это полностью соответствует следующему конечному автомату. "}
+                {"(Подсказка: используйте пустые лямбда-переходы, чтобы лучше организовывать автомат на рисунке.)"}
+                </p>
+
+                <EmailValidatorFSM />
 
 
             </Container>

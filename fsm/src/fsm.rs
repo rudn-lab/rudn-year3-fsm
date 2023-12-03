@@ -164,12 +164,12 @@ impl StateMachineEvaluator {
         if !self.started {
             self.started = true;
             // First step: go over entry links and put link cursors there (if the prefix matches)
-            for link in self.fsm.links.iter() {
+            for (id, link) in self.fsm.links.iter().enumerate() {
                 if let Link::StartLink { node, text, .. } = link {
                     if self.word.starts_with(text) {
                         log::info!("Starting eval: link into {node} with prefix {text:?}");
                         self.link_cursors_back.push((
-                            *node,
+                            id,
                             self.word.to_string(),
                             self.word[text.len()..].to_string(),
                         ));
