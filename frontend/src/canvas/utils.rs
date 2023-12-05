@@ -47,7 +47,7 @@ pub(super) fn draw_text(
     {
         x += width;
         if real_text.len() == 0 {
-            x -= width * 2.0;
+            x -= width - 2.0;
         }
         c.begin_path();
         c.move_to(x, y - 10.0);

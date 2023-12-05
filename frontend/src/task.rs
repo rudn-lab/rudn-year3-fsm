@@ -220,7 +220,7 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                                 init_word_out.set(Some(out_a.clone()));
                             };
                             let init_word_out = init_word.clone();
-                            let out_b = a.clone();
+                            let out_b = b.clone();
                             let load_b = move |ev: MouseEvent| {
                                 ev.prevent_default();
                                 init_word_out.set(Some(out_b.clone()));
