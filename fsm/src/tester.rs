@@ -124,7 +124,7 @@ impl<'a> FSMTester<'a> {
     const TESTS: usize = 250;
 
     #[cfg(not(target_family = "wasm"))]
-    const TESTS: usize = 2500;
+    const TESTS: usize = 4096;
 
     /// Check the FSM against a generated battery of tests.
     ///
