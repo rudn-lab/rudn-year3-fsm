@@ -244,8 +244,8 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                         <table class="table overflow-scroll">
                             <thead>
                                 <tr>
-                                    <th scope="col">{"Эти слова принимаются"}</th>
-                                    <th scope="col">{"Эти слова не принимаются"}</th>
+                                    <th scope="col">{"These Words are Accepted"}</th>
+                                    <th scope="col">{"These words are rejected"}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -360,7 +360,7 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                                     <li>{"Создать начальную стрелочку: нажать Shift, щелкнуть по пустому месту и передвинуть до кружочка"}</li>
                                     <li>{"Передвинуть кружочек: щелкнуть и тянуть"}</li>
                                     <li>{"Изогнуть стрелочку: щелкнуть и тянуть"}</li>
-                                    <li>{"Удалить что-то: щелкнуть, затем нажать Delete"}</li>
+                                    <li>{"Удалить что-то: щелкнуть, затем нажать Delete (на системах без Delete: Shift + Backspace)"}</li>
                                     <li>{"Сделать кружочек принимающим (или наоборот): дважды щелкнуть по нему"}</li>
                                     <li>{"Текст на стрелочках - условие для перехода между состояниями"}</li>
                                     <li>{"Текст можно писать только, когда мышь внутри поля (есть красная обводка)"}</li>

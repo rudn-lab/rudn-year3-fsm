@@ -1,6 +1,5 @@
 use fsm::fsm::StateMachine;
 use gloo::events::EventListener;
-use shadow_clone::shadow_clone;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::rc::Rc;
@@ -9,7 +8,6 @@ use web_sys::CanvasRenderingContext2d;
 use web_sys::Element;
 use web_sys::HtmlCanvasElement;
 use yew::prelude::*;
-use yew_hooks::use_interval;
 
 use crate::canvas::self_link::SelfLink;
 
@@ -588,8 +586,8 @@ impl Component for Canvas {
                             }
                         }
 
-                        if keycode == 46 {
-                            // delete
+                        if keycode == 46 || (self.shift && keycode == 8) {
+                            // delete or shift-backspace
                             render = true;
                             match self.selections.current_active_object {
                                 Some(Object::Link(id)) => {

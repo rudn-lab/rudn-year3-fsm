@@ -8,7 +8,6 @@ mod task;
 mod task_list;
 mod tutorial;
 
-use canvas::Canvas;
 use gloo::storage::Storage;
 use yew::prelude::*;
 use yew_bootstrap::component::*;

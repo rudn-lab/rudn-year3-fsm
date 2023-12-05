@@ -295,7 +295,7 @@ fn NonDetermDemoFSM() -> Html {
 
             let mut new_word = String::new();
             let do_accept = rng.gen_bool(0.5);
-            for i in 0..(rng.gen_range(5..(if do_accept { 7 } else { 10 }))) {
+            for _ in 0..(rng.gen_range(5..(if do_accept { 7 } else { 10 }))) {
                 new_word.push(if rng.gen_ratio(1, 2) { '0' } else { '1' })
             }
             if do_accept {

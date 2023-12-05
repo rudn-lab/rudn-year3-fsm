@@ -8,10 +8,7 @@ use fsm::fsm::{FSMError, FSMOutput, StateMachine, StateMachineEvaluator};
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
-use yew_bootstrap::{
-    component::{Column, Row},
-    icons::BI,
-};
+use yew_bootstrap::icons::BI;
 
 use crate::canvas::Canvas;
 
