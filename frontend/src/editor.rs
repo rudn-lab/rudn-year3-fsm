@@ -103,6 +103,7 @@ pub fn editor() -> Html {
 
     html! {
         <>
+            <div class="alert alert-warning attention">{"Эта страница используется для создания и отладки заданий и тестирующей системы, и не требуется для решения задач."}</div>
             <h1>{"FSM Editor"}</h1>
             <p>{"You can edit, save, load and test state machines here."}</p>
             <Row>

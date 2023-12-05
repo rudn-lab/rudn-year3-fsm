@@ -34,7 +34,7 @@ pub struct CanvasPlayer {
     status: Option<FSMOutput>,
 }
 
-#[derive(Properties, PartialEq)]
+#[derive(Properties, PartialEq, Debug)]
 pub struct CanvasPlayerProps {
     #[prop_or(true)]
     pub speed_changeable: bool,
@@ -77,6 +77,15 @@ pub struct CanvasPlayerProps {
 
     #[prop_or_default]
     pub on_fsm_apply: Callback<StateMachine>,
+
+    #[prop_or_default]
+    pub on_is_running: Callback<bool>,
+
+    #[prop_or_default]
+    pub on_validity: Callback<bool>,
+
+    #[prop_or_default]
+    pub play_pulse: usize,
 }
 
 #[derive(Debug)]
@@ -178,17 +187,20 @@ impl CanvasPlayer {
         }
         if needs_reset && ctx.props().pause_on_restart {
             self.auto_mode = false;
+            ctx.props().on_is_running.emit(false);
         }
 
         let max_complexity = 512;
         if complexity > max_complexity {
             self.eval = Err(format!(
                 "Слишком сложный автомат: {complexity} (>{max_complexity}) курсоров одновременно"
-            ))
+            ));
+            ctx.props().on_terminate.emit(FSMOutput::Reject);
         }
     }
 
     fn reset(&mut self, changed: bool) {
+        log::info!("FSM Reset with changed={changed}");
         self.eval = Ok(StateMachineEvaluator::new(
             self.fsm.clone(),
             self.word.clone(),
@@ -289,9 +301,15 @@ impl CanvasPlayer {
                 html!(<p>{"Не могу обработать автомат: "}{text}</p>)
             }
             Ok(Err(e)) => match e {
-                FSMError::InfiniteLoop => html!(<p>{"Автомат содержит бесконечный цикл"}</p>),
-                FSMError::NoEntryLinks => html!(<p>{"Автомат не имеет входных стрелочек"}</p>),
-                FSMError::DisjointedLink(_) => html!(<p>{"Автомат имеет ошибку связности"}</p>),
+                FSMError::InfiniteLoop => {
+                    html!(<p class="text-danger" style="flex: 1;">{"Автомат содержит бесконечный цикл"}</p>)
+                }
+                FSMError::NoEntryLinks => {
+                    html!(<p class="text-danger" style="flex: 1;">{"Автомат не имеет входных стрелочек"}</p>)
+                }
+                FSMError::DisjointedLink(_) => {
+                    html!(<p class="text-danger" style="flex: 1;">{"Автомат имеет ошибку связности"}</p>)
+                }
             },
         }
     }
@@ -335,7 +353,6 @@ impl Component for CanvasPlayer {
     type Properties = CanvasPlayerProps;
 
     fn create(ctx: &Context<Self>) -> Self {
-        // let fsm: StateMachine = get_sample_fsm();
         let fsm = ctx.props().fsm.clone();
         Self {
             fsm: fsm.clone(),
@@ -358,18 +375,26 @@ impl Component for CanvasPlayer {
     }
 
     fn changed(&mut self, ctx: &Context<Self>, old_props: &Self::Properties) -> bool {
+        // log::info!("NEW = {:?}", ctx.props());
+        // log::info!("OLD = {:?}", old_props);
         self.fsm = ctx.props().fsm.clone();
         self.word = ctx.props().word.to_string();
-        self.eval = Ok(StateMachineEvaluator::new(
-            self.fsm.clone(),
-            self.word.clone(),
-        ));
-        self.reset(true);
+
+        if self.fsm != old_props.fsm || ctx.props().word != old_props.word {
+            self.reset(true);
+            self.auto_mode = self.auto_mode || ctx.props().play_on_change;
+        }
+
+        if ctx.props().play_pulse != old_props.play_pulse {
+            self.auto_mode = true;
+            self.reset(false);
+        }
+
         if ctx.props().word != old_props.word || ctx.props().fsm != old_props.fsm {
             self.status = None;
         }
         // self.auto_mode = ctx.props().auto_play && ctx.props().auto_restart;
-        self.auto_mode = self.auto_mode || ctx.props().play_on_change;
+        ctx.props().on_is_running.emit(self.auto_mode);
         if ctx.props().speed != old_props.speed {
             ctx.link()
                 .send_message(CanvasPlayerMsg::SpeedSliderChange(ctx.props().speed));
@@ -465,18 +490,25 @@ impl Component for CanvasPlayer {
                 ctx.props().on_fsm_apply.emit(fsm.clone());
                 self.fsm = fsm;
                 self.reset(true);
+                let validity = match self.eval {
+                    Ok(Ok(_)) => true,
+                    _ => false,
+                };
+                ctx.props().on_validity.emit(validity);
             }
             CanvasPlayerMsg::ResetFSM => {
                 self.reset(false);
             }
             CanvasPlayerMsg::ToggleAuto => {
                 self.auto_mode = !self.auto_mode;
+                ctx.props().on_is_running.emit(self.auto_mode);
             }
 
             CanvasPlayerMsg::AdvanceFSM => {
                 self.step(ctx);
             }
-        }
+        };
+
         true
     }
 

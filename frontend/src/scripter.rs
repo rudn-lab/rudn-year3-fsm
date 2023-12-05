@@ -156,20 +156,22 @@ pub fn scripter() -> Html {
         }
     };
 
-    html!(
-        <Row>
-            <Column>
-                <textarea class="form-control" rows="24" {oninput} value={(&*script_text).clone()}>
-                </textarea>
-            </Column>
-            <Column>
-                <div>
-                    <button type="button" class="btn btn-success" onclick={compile}>{"Compile"}</button>
-                    <p>{(&*error).clone()}</p>
+    html!(<>
+            <div class="alert alert-warning attention">{"Эта страница используется для создания и отладки заданий и тестирующей системы, и не требуется для решения задач."}</div>
+            <Row>
+                <Column>
+                    <textarea class="form-control" rows="24" {oninput} value={(&*script_text).clone()}>
+                    </textarea>
+                </Column>
+                <Column>
+                    <div>
+                        <button type="button" class="btn btn-success" onclick={compile}>{"Compile"}</button>
+                        <p>{(&*error).clone()}</p>
 
-                    {controls}
-                </div>
-            </Column>
-        </Row>
+                        {controls}
+                    </div>
+                </Column>
+            </Row>
+        </>
     )
 }

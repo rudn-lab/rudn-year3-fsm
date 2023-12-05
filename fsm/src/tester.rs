@@ -134,6 +134,7 @@ impl<'a> FSMTester<'a> {
         let mut test_seed_rng = rand_chacha::ChaCha8Rng::from_seed(expand_seed(init_random_seed));
         let mut first_fail_seed = None;
         let mut first_fail_seed_true_outcome = None;
+        let mut first_fail_len = usize::MAX;
         let mut successes = 0;
 
         // If the FSM is obviously invalid, bail.
@@ -155,9 +156,19 @@ impl<'a> FSMTester<'a> {
                     if user_answer == true_answer {
                         successes += 1;
                     } else {
-                        if first_fail_seed.is_none() {
-                            first_fail_seed = Some(test_seed);
-                            first_fail_seed_true_outcome = Some(true_answer)
+                        match first_fail_seed {
+                            None => {
+                                first_fail_seed = Some(test_seed);
+                                first_fail_seed_true_outcome = Some(true_answer);
+                                first_fail_len = test_outcome.0.len();
+                            }
+                            Some(_) => {
+                                if test_outcome.0.len() < first_fail_len {
+                                    first_fail_seed = Some(test_seed);
+                                    first_fail_seed_true_outcome = Some(true_answer);
+                                    first_fail_len = test_outcome.0.len();
+                                }
+                            }
                         }
                     }
                 }

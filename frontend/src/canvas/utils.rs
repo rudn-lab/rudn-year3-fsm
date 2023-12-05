@@ -14,7 +14,7 @@ pub(super) fn draw_text(
 ) {
     c.set_font("20px \"Times New Roman\", serif");
     let text = if real_text.len() == 0 && me_is_doublesided_link {
-        "(λ)"
+        "(ε)"
     } else {
         real_text
     };

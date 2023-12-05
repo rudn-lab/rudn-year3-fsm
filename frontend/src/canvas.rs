@@ -301,6 +301,7 @@ impl Component for Canvas {
         if old_props.init != ctx.props().init {
             if let Some(ref v) = ctx.props().init {
                 self.deserialize(v.clone());
+                ctx.props().onchange.emit(self.serialize());
                 return true;
             }
         }
@@ -654,10 +655,12 @@ impl Component for Canvas {
             CanvasMessage::MouseEnter => {
                 if !ctx.props().immutable {
                     self.selections.canvas_is_focused = true;
+                    render = true;
                 }
             }
             CanvasMessage::MouseLeave => {
                 self.selections.canvas_is_focused = false;
+                render = true;
             }
         };
 

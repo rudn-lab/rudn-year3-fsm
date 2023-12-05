@@ -6,24 +6,21 @@ use wasm_bindgen::JsCast;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_autoprops::autoprops_component;
-use yew_bootstrap::component::{Container, Lead};
 
 use crate::{canvas_player::CanvasPlayer, task::randfloat};
 
-// {"nodes":[{"x":131,"y":98,"text":"","isAcceptState":false},{"x":189,"y":172,"text":"","isAcceptState":false},{"x":374,"y":98,"text":"","isAcceptState":false},{"x":627,"y":98,"text":"","isAcceptState":false},{"x":690,"y":172,"text":"","isAcceptState":false},{"x":437,"y":172,"text":"","isAcceptState":false},{"x":131,"y":293,"text":"","isAcceptState":false},{"x":131,"y":458,"text":"","isAcceptState":false},{"x":189,"y":528,"text":"","isAcceptState":false},{"x":189,"y":357,"text":"","isAcceptState":false},{"x":374,"y":293,"text":"","isAcceptState":false},{"x":627,"y":293,"text":"","isAcceptState":false},{"x":437,"y":357,"text":"","isAcceptState":false},{"x":690,"y":357,"text":"","isAcceptState":false},{"x":374,"y":458,"text":"","isAcceptState":false},{"x":437,"y":528,"text":"","isAcceptState":false},{"x":627,"y":458,"text":"","isAcceptState":false},{"x":690,"y":528,"text":"","isAcceptState":false}],"links":[{"type":"Link","nodeA":0,"nodeB":2,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":2,"nodeB":3,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":0,"nodeB":1,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5470588235294116,"perpendicularPart":36.50237703782816},{"type":"Link","nodeA":1,"nodeB":0,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.595022624434389,"perpendicularPart":0.0},{"type":"Link","nodeA":2,"nodeB":5,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.40158814187400743,"perpendicularPart":26.660385928787488},{"type":"Link","nodeA":5,"nodeB":2,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":3,"nodeB":4,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.46077289571201696,"perpendicularPart":27.61731988918009},{"type":"Link","nodeA":4,"nodeB":3,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":6,"nodeB":9,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5160857908847185,"perpendicularPart":28.250127523496843},{"type":"Link","nodeA":9,"nodeB":6,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5576407506702413,"perpendicularPart":0.0},{"type":"Link","nodeA":10,"nodeB":12,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.47451952882827025,"perpendicularPart":23.706829462714104},{"type":"Link","nodeA":12,"nodeB":10,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":11,"nodeB":13,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.611764705882353,"perpendicularPart":22.343837155321587},{"type":"Link","nodeA":13,"nodeB":11,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":7,"nodeB":8,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.531703775411423,"perpendicularPart":23.16664867524449},{"type":"Link","nodeA":8,"nodeB":7,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":14,"nodeB":15,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.6748224151539068,"perpendicularPart":23.562424436035172},{"type":"Link","nodeA":15,"nodeB":14,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":16,"nodeB":17,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5895816890292028,"perpendicularPart":32.481954191001165},{"type":"Link","nodeA":17,"nodeB":16,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":6,"nodeB":10,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":10,"nodeB":11,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":7,"nodeB":14,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":14,"nodeB":16,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":17,"nodeB":15,"text":"2","lineAngleAdjust":3.141592653589793,"parallelPart":0.5612648221343873,"perpendicularPart":-29.0},{"type":"Link","nodeA":15,"nodeB":8,"text":"2","lineAngleAdjust":3.141592653589793,"parallelPart":0.2903225806451613,"perpendicularPart":-25.0},{"type":"Link","nodeA":13,"nodeB":12,"text":"2","lineAngleAdjust":3.141592653589793,"parallelPart":0.5019762845849802,"perpendicularPart":-29.0},{"type":"Link","nodeA":12,"nodeB":9,"text":"2","lineAngleAdjust":3.141592653589793,"parallelPart":0.5040322580645161,"perpendicularPart":-31.0},{"type":"Link","nodeA":4,"nodeB":5,"text":"2","lineAngleAdjust":3.141592653589793,"parallelPart":0.6837944664031621,"perpendicularPart":-23.0},{"type":"Link","nodeA":5,"nodeB":1,"text":"2","lineAngleAdjust":3.141592653589793,"parallelPart":0.5040322580645161,"perpendicularPart":-23.0},{"type":"Link","nodeA":0,"nodeB":6,"text":"3","lineAngleAdjust":0.0,"parallelPart":0.7487179487179487,"perpendicularPart":28.0},{"type":"Link","nodeA":10,"nodeB":14,"text":"3","lineAngleAdjust":0.0,"parallelPart":0.6424242424242425,"perpendicularPart":21.0},{"type":"Link","nodeA":16,"nodeB":3,"text":"3","lineAngleAdjust":0.0,"parallelPart":0.14444444444444443,"perpendicularPart":86.0}]}
-
 #[function_component]
 fn SampleFSMPlayer() -> Html {
-    let word = use_state(|| String::from("1101012"));
+    let word = use_state(|| String::from("110101"));
     let fsm: StateMachine = serde_json::from_str(
         r#"
-{"nodes":[{"x":62,"y":70,"text":"","isAcceptState":false},{"x":172,"y":70,"text":"","isAcceptState":false},{"x":286,"y":70,"text":"","isAcceptState":false},{"x":399,"y":70,"text":"","isAcceptState":false},{"x":506,"y":70,"text":"","isAcceptState":false},{"x":727,"y":70,"text":"","isAcceptState":false},{"x":62,"y":181,"text":"","isAcceptState":false},{"x":62,"y":294,"text":"","isAcceptState":false},{"x":62,"y":405,"text":"","isAcceptState":false},{"x":62,"y":523,"text":"","isAcceptState":false},{"x":172,"y":523,"text":"","isAcceptState":false},{"x":286,"y":523,"text":"","isAcceptState":false},{"x":399,"y":523,"text":"","isAcceptState":false},{"x":506,"y":523,"text":"","isAcceptState":false},{"x":727,"y":523,"text":"","isAcceptState":false},{"x":172,"y":405,"text":"","isAcceptState":false},{"x":172,"y":294,"text":"","isAcceptState":false},{"x":172,"y":181,"text":"","isAcceptState":false},{"x":286,"y":181,"text":"","isAcceptState":false},{"x":286,"y":294,"text":"","isAcceptState":false},{"x":286,"y":405,"text":"","isAcceptState":false},{"x":399,"y":405,"text":"","isAcceptState":false},{"x":399,"y":294,"text":"","isAcceptState":false},{"x":399,"y":181,"text":"","isAcceptState":false},{"x":506,"y":181,"text":"","isAcceptState":false},{"x":506,"y":294,"text":"","isAcceptState":false},{"x":506,"y":405,"text":"","isAcceptState":false},{"x":727,"y":181,"text":"","isAcceptState":false},{"x":727,"y":294,"text":"","isAcceptState":false},{"x":727,"y":405,"text":"","isAcceptState":false},{"x":62,"y":597,"text":"","isAcceptState":false},{"x":172,"y":597,"text":"","isAcceptState":false},{"x":286,"y":597,"text":"","isAcceptState":false},{"x":399,"y":597,"text":"","isAcceptState":false},{"x":506,"y":597,"text":"","isAcceptState":false}],"links":[{"type":"StartLink","node":0,"text":"","deltaX":-39,"deltaY":-49},{"type":"Link","nodeA":0,"nodeB":1,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":1,"nodeB":2,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":2,"nodeB":3,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":3,"nodeB":4,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":0,"nodeB":6,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":6,"nodeB":7,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":7,"nodeB":8,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":8,"nodeB":9,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":9,"nodeB":10,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":10,"nodeB":11,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":11,"nodeB":12,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":12,"nodeB":13,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":6,"nodeB":17,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":17,"nodeB":18,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":18,"nodeB":23,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":23,"nodeB":24,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":4,"nodeB":24,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":3,"nodeB":23,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":2,"nodeB":18,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":1,"nodeB":17,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":17,"nodeB":16,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":18,"nodeB":19,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":23,"nodeB":22,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":24,"nodeB":25,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":16,"nodeB":15,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":19,"nodeB":20,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":22,"nodeB":21,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":25,"nodeB":26,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":15,"nodeB":10,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":20,"nodeB":11,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":21,"nodeB":12,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":26,"nodeB":13,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":8,"nodeB":15,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":15,"nodeB":20,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":20,"nodeB":21,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":21,"nodeB":26,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":22,"nodeB":25,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":19,"nodeB":22,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":16,"nodeB":19,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":7,"nodeB":16,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":13,"nodeB":14,"text":"2","lineAngleAdjust":3.141592653589793,"parallelPart":0.5203619909502263,"perpendicularPart":0.0},{"type":"Link","nodeA":26,"nodeB":29,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":25,"nodeB":28,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":24,"nodeB":27,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":4,"nodeB":5,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.37104072398190047,"perpendicularPart":0.0},{"type":"Link","nodeA":14,"nodeB":29,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":29,"nodeB":28,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":28,"nodeB":27,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":27,"nodeB":5,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":5,"nodeB":0,"text":"","lineAngleAdjust":0.0,"parallelPart":0.20601503759398496,"perpendicularPart":39.0},{"type":"Link","nodeA":30,"nodeB":31,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":9,"nodeB":30,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":10,"nodeB":31,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":11,"nodeB":32,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":12,"nodeB":33,"text":"2","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":31,"nodeB":32,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":32,"nodeB":33,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":33,"nodeB":34,"text":"","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":34,"nodeB":14,"text":"","lineAngleAdjust":0.0,"parallelPart":0.7163134930132371,"perpendicularPart":17.935289622444646}]}        "#,
+{"nodes":[{"x":62,"y":70,"text":"","isAcceptState":true},{"x":172,"y":70,"text":"","isAcceptState":false},{"x":286,"y":70,"text":"","isAcceptState":false},{"x":399,"y":70,"text":"","isAcceptState":false},{"x":506,"y":70,"text":"","isAcceptState":false},{"x":62,"y":181,"text":"","isAcceptState":false},{"x":62,"y":294,"text":"","isAcceptState":false},{"x":62,"y":405,"text":"","isAcceptState":false},{"x":62,"y":523,"text":"","isAcceptState":false},{"x":172,"y":523,"text":"","isAcceptState":false},{"x":286,"y":523,"text":"","isAcceptState":false},{"x":399,"y":523,"text":"","isAcceptState":false},{"x":506,"y":523,"text":"","isAcceptState":true},{"x":172,"y":405,"text":"","isAcceptState":false},{"x":172,"y":294,"text":"","isAcceptState":false},{"x":172,"y":181,"text":"","isAcceptState":true},{"x":286,"y":181,"text":"","isAcceptState":false},{"x":286,"y":294,"text":"","isAcceptState":true},{"x":286,"y":405,"text":"","isAcceptState":false},{"x":399,"y":405,"text":"","isAcceptState":true},{"x":399,"y":294,"text":"","isAcceptState":false},{"x":399,"y":181,"text":"","isAcceptState":false},{"x":506,"y":181,"text":"","isAcceptState":false},{"x":506,"y":294,"text":"","isAcceptState":false},{"x":506,"y":405,"text":"","isAcceptState":false},{"x":619,"y":70,"text":"","isAcceptState":false},{"x":736,"y":70,"text":"","isAcceptState":false},{"x":619,"y":181,"text":"","isAcceptState":false},{"x":619,"y":294,"text":"","isAcceptState":false},{"x":619,"y":405,"text":"","isAcceptState":true},{"x":619,"y":523,"text":"","isAcceptState":false},{"x":736,"y":523,"text":"","isAcceptState":false},{"x":736,"y":405,"text":"","isAcceptState":false},{"x":736,"y":294,"text":"","isAcceptState":true},{"x":736,"y":181,"text":"","isAcceptState":false}],"links":[{"type":"StartLink","node":0,"text":"","deltaX":-39,"deltaY":-49},{"type":"Link","nodeA":0,"nodeB":1,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":1,"nodeB":2,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":2,"nodeB":3,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":3,"nodeB":4,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":0,"nodeB":5,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":5,"nodeB":6,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":6,"nodeB":7,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":7,"nodeB":8,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":8,"nodeB":9,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":9,"nodeB":10,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":10,"nodeB":11,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":11,"nodeB":12,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":5,"nodeB":15,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":15,"nodeB":16,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":16,"nodeB":21,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":21,"nodeB":22,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":4,"nodeB":22,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":3,"nodeB":21,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":2,"nodeB":16,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":1,"nodeB":15,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":15,"nodeB":14,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":16,"nodeB":17,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":21,"nodeB":20,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":22,"nodeB":23,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":14,"nodeB":13,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":17,"nodeB":18,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":20,"nodeB":19,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":23,"nodeB":24,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":13,"nodeB":9,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":18,"nodeB":10,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":19,"nodeB":11,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":24,"nodeB":12,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":7,"nodeB":13,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":13,"nodeB":18,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":18,"nodeB":19,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":19,"nodeB":24,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":20,"nodeB":23,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":17,"nodeB":20,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":14,"nodeB":17,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":6,"nodeB":14,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":4,"nodeB":25,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":25,"nodeB":26,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":22,"nodeB":27,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":25,"nodeB":27,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":26,"nodeB":34,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":34,"nodeB":33,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":33,"nodeB":32,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":32,"nodeB":31,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":12,"nodeB":30,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":30,"nodeB":31,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":29,"nodeB":30,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":29,"nodeB":32,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":24,"nodeB":29,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":23,"nodeB":28,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":28,"nodeB":33,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":27,"nodeB":34,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":27,"nodeB":28,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":28,"nodeB":29,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0}]}
+        "#,
     ).unwrap();
 
     let on_terminate = {
         shadow_clone!(word);
         move |_outcome| {
-            log::info!("sample terminated");
             let mut seed = [0; 32];
             for v in seed.iter_mut() {
                 *v = (randfloat() * 256.0) as u8;
@@ -31,12 +28,8 @@ fn SampleFSMPlayer() -> Html {
             let mut rng = ChaCha8Rng::from_seed(seed);
 
             let mut new_word = String::new();
-            for i in 0..(rng.gen_range(5..20)) {
-                if rng.gen_ratio(1, 8) {
-                    new_word.push('2');
-                } else {
-                    new_word.push(if rng.gen_ratio(1, 2) { '0' } else { '1' })
-                }
+            for _ in 0..(rng.gen_range(5..20)) {
+                new_word.push(if rng.gen_ratio(1, 2) { '0' } else { '1' })
             }
             word.set(new_word);
         }
@@ -130,11 +123,13 @@ fn AsThenBsFSM() -> Html {
         }
     };
 
+    let play_pulse = use_state(|| 0usize);
     let onclick = {
-        shadow_clone!(is_running);
+        shadow_clone!(is_running, play_pulse);
         move |ev: MouseEvent| {
             ev.prevent_default();
             is_running.set(true);
+            play_pulse.set(*play_pulse + 1);
         }
     };
 
@@ -142,9 +137,9 @@ fn AsThenBsFSM() -> Html {
         <>
             <CanvasPlayer word={(&*word).clone()}
             fsm={fsm.clone()} editable={false} speed_changeable={true}
-            auto_restart={false} show_status_indicator={true} show_transport_buttons={true}
+            auto_restart={true} show_status_indicator={true} show_transport_buttons={true}
             pause_on_restart={true} play_on_change={*is_running}
-            speed={860}
+            speed={860} play_pulse={*play_pulse}
             {on_terminate}/>
             <form class="input-group my-2" style="width: 800px; margin: 0 auto;">
                 <span class="input-group-text">{"Введите слово для проверки: "}</span>
@@ -181,11 +176,13 @@ fn AsBsFourFSM() -> Html {
         }
     };
 
+    let play_pulse = use_state(|| 0usize);
     let onclick = {
-        shadow_clone!(is_running);
+        shadow_clone!(is_running, play_pulse);
         move |ev: MouseEvent| {
             ev.prevent_default();
             is_running.set(true);
+            play_pulse.set(*play_pulse + 1);
         }
     };
 
@@ -193,9 +190,9 @@ fn AsBsFourFSM() -> Html {
         <>
             <CanvasPlayer word={(&*word).clone()}
             fsm={fsm.clone()} editable={false} speed_changeable={true}
-            auto_restart={false} show_status_indicator={true} show_transport_buttons={true}
+            auto_restart={true} show_status_indicator={true} show_transport_buttons={true}
             pause_on_restart={true} play_on_change={*is_running}
-            speed={860}
+            speed={860} play_pulse={*play_pulse}
             {on_terminate}/>
             <form class="input-group my-2" style="width: 800px; margin: 0 auto;">
                 <span class="input-group-text">{"Введите слово для проверки: "}</span>
@@ -232,11 +229,13 @@ fn EmailValidatorFSM() -> Html {
         }
     };
 
+    let play_pulse = use_state(|| 0usize);
     let onclick = {
-        shadow_clone!(is_running);
+        shadow_clone!(is_running, play_pulse);
         move |ev: MouseEvent| {
             ev.prevent_default();
             is_running.set(true);
+            play_pulse.set(*play_pulse + 1);
         }
     };
 
@@ -244,62 +243,9 @@ fn EmailValidatorFSM() -> Html {
         <>
             <CanvasPlayer word={(&*word).clone()}
             fsm={fsm.clone()} editable={false} speed_changeable={true}
-            auto_restart={false} show_status_indicator={true} show_transport_buttons={true}
+            auto_restart={true} show_status_indicator={true} show_transport_buttons={true}
             pause_on_restart={true} play_on_change={*is_running}
-            speed={860}
-            {on_terminate}/>
-            <form class="input-group my-2" style="width: 800px; margin: 0 auto;">
-                <span class="input-group-text">{"Введите слово для проверки: "}</span>
-                <input class="form-control" disabled={*is_running} value={(&*word).clone()} {oninput} />
-                <input class="btn btn-success" disabled={*is_running} value="Тест!" type="submit" {onclick} />
-            </form>
-        </>
-    )
-}
-
-#[function_component]
-fn FreeDemoFSM() -> Html {
-    let word = use_state(|| String::from(""));
-    let is_running = use_state(|| false);
-    let fsm = use_state(StateMachine::default);
-
-    let on_terminate = {
-        shadow_clone!(is_running);
-        move |_outcome| {
-            is_running.set(false);
-        }
-    };
-
-    let oninput = {
-        shadow_clone!(word);
-        move |ev: InputEvent| {
-            let target: HtmlInputElement = ev.target().unwrap().dyn_into().unwrap();
-            word.set(target.value());
-        }
-    };
-
-    let onclick = {
-        shadow_clone!(is_running);
-        move |ev: MouseEvent| {
-            ev.prevent_default();
-            is_running.set(true);
-        }
-    };
-
-    let on_fsm_apply = {
-        shadow_clone!(fsm);
-        move |new_fsm| {
-            fsm.set(new_fsm);
-        }
-    };
-
-    html!(
-        <>
-            <CanvasPlayer word={(&*word).clone()}
-            fsm={(&*fsm).clone()} editable={true} speed_changeable={true}
-            auto_restart={false} show_status_indicator={true} show_transport_buttons={true}
-            pause_on_restart={true} play_on_change={*is_running} {on_fsm_apply}
-            speed={860}
+            speed={860} play_pulse={*play_pulse}
             {on_terminate}/>
             <form class="input-group my-2" style="width: 800px; margin: 0 auto;">
                 <span class="input-group-text">{"Введите слово для проверки: "}</span>
@@ -324,7 +270,7 @@ fn DetermMazeFSM() -> Html {
         <CanvasPlayer word={(&*word).clone()}
         fsm={fsm.clone()} editable={false} speed_changeable={true}
         auto_restart={true} show_status_indicator={true} show_transport_buttons={true}
-        pause_on_restart={false}
+        pause_on_restart={false} show_steps_indicator={true}
         speed={800}/>
     )
 }
@@ -383,7 +329,7 @@ fn NonDetermMazeFSM() -> Html {
         <CanvasPlayer word={(&*word).clone()}
         fsm={fsm.clone()} editable={false} speed_changeable={true}
         auto_restart={true} show_status_indicator={true} show_transport_buttons={true}
-        pause_on_restart={false}
+        pause_on_restart={false} show_steps_indicator={true}
         speed={800}/>
     )
 }
@@ -399,22 +345,40 @@ fn WordDisplay(word: AttrValue) -> Html {
 
 #[function_component(Tutorial)]
 pub fn tutorial() -> Html {
+    let is_english = use_state(|| false);
+    let toggle_en = {
+        shadow_clone!(is_english);
+        move |ev: MouseEvent| {
+            ev.prevent_default();
+            is_english.set(!*is_english);
+        }
+    };
     html!(
         <>
-            <nav class="navbar bg-body-tertiary">
-                <div class="container-fluid">
-                    <a href="/" classes="navbar-brand">{"RUDN FSM tutorial"}</a>
-                    // <div class="nav-item">
-                    //     <Link<Route> classes="nav-link" to={Route::Editor}>{"Редактор автоматов"}</Link<Route>>
-                    // </div>
-                    // <div class="nav-item">
-                    //     <Link<Route> classes="nav-link" to={Route::Scripter}>{"Отладка заданий"}</Link<Route>>
-                    // </div>
-                    // <ProfileNav />
-                </div>
-            </nav>
-            <Container>
+            <button class="btn btn-secondary" style="margin: 0 0;" onclick={toggle_en}>
+                if *is_english {
+                    {"Можно это также прочитать на русском языке, нажав сюда"}
+                } else {
+                    {"You can also read this in English, click here"}
+                }
+            </button>
+            if *is_english {
+                <TutorialEn />
+            } else {
+                <TutorialRu />
+            }
+        </>
+    )
+}
+
+#[function_component(TutorialRu)]
+pub fn tutorial_ru() -> Html {
+    html!(
+        <>
                 <h1>{"Введение в конечные автоматы"}</h1>
+                <div class="alert alert-info">
+                    {"Есть комментарии, как улучшить это? "}<a href="https://github.com/rudn-lab/rudn-year3-fsm/issues" class="alert-link">{"Создайте issue в репозитории проекта!"}</a>
+                </div>
                 <hr />
                 <h2>{"1. Формальные языки"}</h2>
                 <p>
@@ -454,6 +418,7 @@ pub fn tutorial() -> Html {
 
                 <p>{"Переходы могут приходить из пустоты "}<em>{"(начальные переходы)"}</em>{" или соединять два состояния, или одно состояние само с собой."}</p>
                 <p>{"Состояния могут быть обведены один или два раза. Кружочек, который обведен два раза, называется "}<em>{"принимающим состоянием."}</em></p>
+                <p>{"На стрелочках есть буквы, которые требуются, чтобы перейти по ней. Если для перехода по стрелочке не требуется букв, то вместо этого там написана буква эпислон; она пропадает, если начать писать текст."}</p>
                 <p>{"Попробуйте создать эти объекты в поле снизу. Учтите, что можно вводить текст только, когда мышь находится над полем, и оно имеет красную обводку."}</p>
                 <LinkShowcaseFSMPlayer />
 
@@ -463,6 +428,9 @@ pub fn tutorial() -> Html {
                 <p><b>{"Можно сказать, что мы ходим по лабиринту из стрелочек и кружочков. Проверяемая строка — маршрут по лабиринту. "}
                 {"В каждом кружочке смотрим на доступные выходы. Если есть выход, который соответствует строке, то идем по нему. Кружочки с двойной обводкой — выходы из лабиринта. "}
                 </b></p>
+
+                <DetermMazeFSM />
+
                 <p>{"В этом примере у нас есть простой лабиринт, который имеет только один путь. По шагам:"}</p>
                 <ol>
                     <li>{"Сначала, мы входим в лабиринт и оказываемся в кружочке A."}</li>
@@ -470,8 +438,8 @@ pub fn tutorial() -> Html {
                     <li>{"Мы видим выход с надписью "}<WordDisplay word="0" />{" и идем по нему. Мы зачеркиваем "}<WordDisplay word="0" />{" с начала строки: мы уже сделали этот переход в лабиринте. Мы оказываемся в кружочке B."}</li>
                     <li>{"Наш маршрут дальше говорит нам пойти в выход с надписью "}<WordDisplay word="1" />{". Мы находим такой выход из этого кружочка;"}</li>
                     <li>{"и после этого идем по этому пути, который ведет в кружочек C. Мы зачеркиваем цифру "}<WordDisplay word="1" />{" из маршрута."}</li>
-                    <li>{"Кружочек C уже имеет выход, но маршрут еще не закончился, поэтому мы идем дальше. Маршрут говорит идти по выходу "}<WordDisplay word="0" />{"."}</li>
-                    <li>{"Мы идем по этому выходу, зачеркивая "}<WordDisplay word="0" />{", и оказываемся в кружочке D."}</li>
+                    <li>{"Кружочек C уже является выходом из лабиринта, но маршрут еще не закончился, поэтому мы идем дальше. Маршрут говорит идти по стрелочке "}<WordDisplay word="0" />{"."}</li>
+                    <li>{"Мы идем по этой стрелочке, зачеркивая "}<WordDisplay word="0" />{", и оказываемся в кружочке D."}</li>
                     <li>{"Здесь мы находим выход, на котором написано "}<WordDisplay word="0010" />{". У нас в маршруте как раз написано, что дальше надо будет идти в выход "}<WordDisplay word="0" />{", затем "}<WordDisplay word="0" />{", затем "}<WordDisplay word="1" />{", и наконец "}<WordDisplay word="0" />{"."}</li>
                     <li>{"Несколько букв подряд на выходе — это как будто пройти по всем из них одновременно, поэтому мы идем в этот выход, и зачеркиваем все четыре буквы "}<WordDisplay word="0010" />{" из маршрута."}</li>
                     <li>{"У нас теперь закончился маршрут; в нем нет незачеркнутых букв. И мы также оказались в кружочке, где есть выход из лабиринта. Если такое произошло, это значит, что маршрут был хороший — мы принимаем это слово."}</li>
@@ -482,7 +450,6 @@ pub fn tutorial() -> Html {
                 {"и исполнять его по отдельным шагам с помощью синей кнопки."}
                 </p>
 
-                <DetermMazeFSM />
 
 
                 <p>{"Если из кружочка есть несколько выходов, то мы идем только по тем стрелочкам, которые соответствуют маршруту, и игнорируем остальные."}</p>
@@ -495,10 +462,11 @@ pub fn tutorial() -> Html {
 
                 <ul>
                     <li>{"Если же мы дошли до конца маршрута, но оказались в обычном кружочке, то мы заблудились; маршрут не хороший, и мы отвергаем такое слово."}</li>
-                    <li>{"Если маршрут говорит пойти по стрелочке, которой не существует (например, если в маршруте написано идти в выход "}<WordDisplay word="2" />{", а в этом кружочке есть только выходы "}<WordDisplay word="0" />{" и "}<WordDisplay word="1" />{", значит мы тоже заблудились; в такой ситуации мы также отвергаем слово."}
+                    <li>{"Если маршрут говорит пойти по стрелочке, которой не существует (например, если в маршруте написано идти в выход "}<WordDisplay word="2" />{", а в этом кружочке есть только выходы "}<WordDisplay word="0" />{" и "}<WordDisplay word="1" />{"), значит мы тоже заблудились; в такой ситуации мы также отвергаем слово."}
                     </li>
                 </ul>
 
+                <hr />
                 <h2>{"3. Применения автоматов"}</h2>
 
                 <p>{"Конечные автоматы могут быть использованы для распознания любого языка, для которого требуется конечное количество памяти."}</p>
@@ -536,11 +504,12 @@ pub fn tutorial() -> Html {
                 {" до "}<WordDisplay word="f" />{", и домен может заканчиваться только на .com, .ru, .su, .net или .space."}</p>
                 <p>{"Регулярное выражение для такого правила валидации будет выглядеть вот так: "}<code>{"[a-f]+@[a-f]+\\.(com|ru|net|(s(u|pace)))"}</code>{"; "}
                 {"это полностью соответствует следующему конечному автомату. "}
-                {"(Подсказка: используйте пустые лямбда-переходы, чтобы лучше организовывать автомат на рисунке.)"}
+                {"(Подсказка: используйте пустые эпсилон-переходы, чтобы лучше организовывать автомат на рисунке.)"}
                 </p>
 
                 <EmailValidatorFSM />
 
+                <hr />
                 <h2>{"4. Недетерминированные автоматы"}</h2>
                 <p>{"Пока что мы говорили в основном про "}<em>{"детерминированные конечные автоматы"}</em>{". "}
                 {"В таких автоматах всегда есть только один путь: никогда нет ситуации, когда из одного кружочка есть две стрелочки с одинаковым символом. "}
@@ -555,6 +524,8 @@ pub fn tutorial() -> Html {
                 <p><b>{"Ходя по лабиринту НКА, если мы встречаем развилку, то мы клонируем себя. Каждый клон идет по своей ветке лабиринта. "}
                 {"Если хотя бы один клон в итоге дошел до выхода, то маршрут хороший и мы его принимаем; "}
                 {"если все клоны заблудились, то маршрут плохой и мы его отвергаем. "}</b></p>
+
+                <NonDetermMazeFSM />
 
                 <ol>
                     <li>{"Сначала мы заходим в лабиринт и оказываемся в состоянии A."}</li>
@@ -585,7 +556,6 @@ pub fn tutorial() -> Html {
 
                 </ol>
 
-                <NonDetermMazeFSM />
 
 
                 <p>{"НКА часто позволяют описать один и тот же язык легче, чем ДКА."}</p>
@@ -598,13 +568,220 @@ pub fn tutorial() -> Html {
 
                 <NonDetermDemoFSM />
 
+                <p>{"НКА более удобные для создания, но они не сильнее ДКА: обе категории автоматов могут обрабатывать все регулярные языки. "}
+                {"Во-первых, любой ДКА это тривиальный НКА: у тебя есть возможность делать клонов, чтобы ходить по лабиринту параллельно, но это просто не потребовалось. "}
+                {"Помимо этого, любой НКА можно преобразовать в ДКА, используя определенную математическую конструкцию: "}<a href="https://en.wikipedia.org/wiki/Powerset_construction">{"Powerset construction."}</a>
+                {" Однако, если взять НКА с N состояниями, такое преобразование может повысить количество состояний до 2^N, что может быть непозволительно большим."}
+                </p>
+                <p>{"Тестирующая система одинаково обрабатывает НКА и ДКА, поэтому следует использовать тот подход, который более удобен для каждой задачи."}</p>
 
-                <h2>{"P.S. Тестер автоматов"}</h2>
-                <p>{"Здесь вы можете использовать компонент визуализации, чтобы отлаживать свои автоматы."}</p>
+        </>
+    )
+}
 
-                <FreeDemoFSM />
+#[function_component(TutorialEn)]
+pub fn tutorial_en() -> Html {
+    html!(
+        <>
+                <h1>{"Intro to finite state machines"}</h1>
+                <div class="alert alert-info">
+                    {"Have ideas for improving this? "}<a href="https://github.com/rudn-lab/rudn-year3-fsm/issues" class="alert-link">{"Create an issue in the project's repo!"}</a>
+                </div>
+                <hr />
+                <h2>{"1. Formal languages"}</h2>
+                <p>
+                    {"A "}<em>{"string"}</em>{" is a finite sequence of symbols: "}<WordDisplay word="10010101"/>{" is a string consisting of the symbols 0 and 1."}
+                </p>
+                <p>
+                    {"A string may be empty, containing zero symbols. This string is designated with the epsilon symbol: "}<WordDisplay word="" />
+                    {" (in the literature, a lambda symbol λ is also used for this purpose; I am not entirely clear on the difference between them, but here we shall use the epsilon to designate the empty word.)"}
+                </p>
+                <p>
+                {"A "}<em><a href="https://en.wikipedia.org/wiki/Formal_language"><b>{"formal language"}</b></a>
+                    {" is a (potentially infinite) set of strings. "}</em>
+                    {"The strings that are part of a language are its "}<em>{"words. "}</em>
+                    {"For every string, there needs to be a way to tell if it is a word of the language; then the language is considered fully defined."}
+                </p>
+                <p>
+                    {"A formal language is defined by some kind of rule. "}
+                    {"The simplest kind of rule is an enumeration of all words in the language. "}
+                    {"The most complicated is a computer program that says 'yes' or 'no' for the input string."}
+                </p>
+                <p>
+                    {"According to "}
+                    <a href="https://en.wikipedia.org/wiki/Chomsky_hierarchy">
+                        {"the Chomsky hierarchy of formal languages,"}
+                    </a>
+                    {" there are four complexity classes of formal grammars. "}
+                    <em>{"Regular languages"}</em>{" are the simplest kind. "}
+                    {"They are recognized by "}<em>{"finite state machines or finite automata. "}</em>
+                    {"When we say that an automaton recognizes a language, it means that it always gives the correct answer about whether a word is part of a language or not."}
+                </p>
+                <hr />
 
-            </Container>
+
+                <h2>{"2. Finite state machines"}</h2>
+                <p>{"A FSM consists of circles "}<em>{"(states)"}</em>{" and directed arrows connecting them "}<em>{"(transitions)."}</em></p>
+                <SampleFSMPlayer />
+
+                <p>{"Transitions can come from empty space "}<em>{"(initial transitions)"}</em>{" or connect two states together, or one state to itself."}</p>
+                <p>{"States may have a circle inside the big circle. The doubly-stroked circles are the "}<em>{"accepting states."}</em></p>
+                <p>{"The arrows have letters on them, which are the prerequisite for following the transition. If the transition does not require any letters, it is an epsilon-transition, designated by the letter epsilon next to it; it will disappear if you start typing."}</p>
+                <p>{"Try creating these objects in the box below. Note that you can only enter text when the mouse is over the box, and it has a red outline."}</p>
+                <LinkShowcaseFSMPlayer />
+
+                <p>{"As a FSM processes a string, it keeps a cursor to one of its circles. "}
+                {"Initially the pointer starts at the state, which has initial transitions from empty space."}</p>
+                <p>{"At every step, the FSM looks at all arrows from the current state. If the arrow's text is the next letter in the string, a transition is performed, moving the cursor to the next state."}</p>
+                <p><b>{"It's as if one is navigating a maze of arrows and circles, with the tested string serving as a guide. "}
+                {"In every circle, look at the exits. If there is an exit corresponding to the string, we go across it. The accepting states are the exits from the maze. "}
+                </b></p>
+
+                <DetermMazeFSM />
+
+                <p>{"In the above example we have a simple maze that has only a single path. Here is it step-by-step:"}</p>
+                <ol>
+                    <li>{"First, we enter the maze and are at node A."}</li>
+                    <li>{"Looking at the guide, it tells us to move into "}<WordDisplay word="0" />{"."}</li>
+                    <li>{"We see an arrow labeled "}<WordDisplay word="0" />{" and transition. We cross out "}<WordDisplay word="0" />{" from the start of the string: we have already done this transition in the maze. We are now in node B."}</li>
+                    <li>{"The guide tells us to go into the exit labeled "}<WordDisplay word="1" />{". We find this exit from the current node;"}</li>
+                    <li>{"then go along the arrow, which leads into node C. We cross out "}<WordDisplay word="1" />{" from the guide."}</li>
+                    <li>{"Node C is already an accepting state, but the guide is not over yet, so we keep going. It tells us to take the "}<WordDisplay word="0" />{" path."}</li>
+                    <li>{"We go into that arrow, crossing out "}<WordDisplay word="0" />{", and are now in node D."}</li>
+                    <li>{"Here we find an arrow that has the label "}<WordDisplay word="0010" />{". According to our guide, we need to go into "}<WordDisplay word="0" />{", then "}<WordDisplay word="0" />{", then "}<WordDisplay word="1" />{", and finally "}<WordDisplay word="0" />{"."}</li>
+                    <li>{"If the arrow has multiple letters on it, it's as if you go across all of them in sequence — so we take that arrow and cross out all the letters "}<WordDisplay word="0010" />{" из маршрута."}</li>
+                    <li>{"We are now at the end of the guide; it has no more uncrossed letters. We are also in an accepting node. When this happens, it means the guide is good, and we therefore accept this word."}</li>
+                </ol>
+
+                <p>{"You can carefully view these steps by pausing the FSM above with the green button, "}
+                {"then resetting it with the red button, "}
+                {"and making single steps with the blue button."}
+                </p>
+
+
+
+                <p>{"If a single node has multiple exits, we only transition with the arrows that correspond to the guide, and ignore the rest."}</p>
+                <p>{"In the box below, we first always go through the 0 arrow, finding ourselves in state A."}
+                {"When the input string equals "}<WordDisplay word="00" />{", the FSM makes a transition through the top arrow, and when it's  "}<WordDisplay word="01" />{", we follow the bottom arrow. "}
+                {"Only the top circle is an accepting state, so the automaton only accepts the word "}<WordDisplay word="00" />{"."}</p>
+                <ZeroZeroOrZeroOneFSM />
+
+                <p>{"When we will have crossed out all the letters in the guide, we need to be standing on an accepting circle. If we are, then we have successfully exited the maze, meaning the guide is good, so the automaton accepts this word."}</p>
+
+                <ul>
+                    <li>{"If we have gotten to the end of the guide, but we are in a normal circle, then we have gotten lost; the guide isn't good, and we reject this word."}</li>
+                    <li>{"If the guide says to go across an arrow that doesn't exist (for example, if the guide says to go into the "}<WordDisplay word="2" />{" arrow, but the only arrows available are "}<WordDisplay word="0" />{" and "}<WordDisplay word="1" />{"), this also means we got lost; we reject the word in this case too."}
+                    </li>
+                </ul>
+
+                <hr />
+                <h2>{"3. Applications of FSMs"}</h2>
+
+                <p>{"FSMs can be used to describe any language, for which only a finite amount of memory is needed."}</p>
+                <p>
+                {"For example, it is easy to recognize the language of words, which start with some number of "}
+                <WordDisplay word="A" />
+                {", and are followed by some number of "}<WordDisplay word="B" />
+                {" — for this, you need to hold only one value (whether we're currently waiting for an "}<WordDisplay word="A" />{" or a "}<WordDisplay word="B" />{"), "}
+                {" and the corresponding FSM needs only two states. "}
+                {"Try inputting different sequences of "}<em>{"latin letters"}</em>{" and see how the FSM will process them."}
+                </p>
+
+                <AsThenBsFSM />
+
+                <p>{"On the other hand, it is impossible to build a finite automaton that recognizes a sequence of "}<WordDisplay word="A" />{"s, "}
+                {"followed by "}<em>{" the same number of "}</em><WordDisplay word="B" />{"s."}
+                {"This is because it requires keeping track of the number of "}<WordDisplay word="A" />{"s that we've seen. "}
+                {"This number can be very large; in theory, so large that our computer will not have enough memory to store it. "}
+                {"Because of this, it is impossible to recognize this language with a finite state machine."}
+                </p>
+
+                <p>{"As a demo, here is a finite state machine that does recognize such sequences, but up to a length of 8. "}
+                {"To recognize any such sequence, you'd need to extend it to infinity — "}
+                {"which means it won't be a  "}<em>{"finite"}</em>{" state machine anymore."}
+                </p>
+
+                <AsBsFourFSM />
+
+                <p>{"For the same reason, one cannot create a FSM that recognizes proper bracket sequences: this also requires storing the number of brackets that are yet to be closed, and this is not allowed."}</p>
+
+                <p>{"FSMs define regular languages, which are also recognized by "}<em>{"regular expressions (regexes)"}</em>
+                {" — these are very common in programming. For example, they're used for text field validation, such as for email addresses."}</p>
+                <p>{"Unfortunately, this FSM designer cannot make an arrow that accepts \"any single letter\". "}
+                {"So, we will need to limit the acceptable letters: let's imagine that the username and domain name can only contain letters between "}<WordDisplay word="a" />
+                {" and "}<WordDisplay word="f" />{", and the domain can only end with .com, .ru, .su, .net or .space."}</p>
+                <p>{"The regular expression for this rule will look like this: "}<code>{"[a-f]+@[a-f]+\\.(com|ru|net|(s(u|pace)))"}</code>{"; "}
+                {"this precisely matches the FSM below. "}
+                {"(Hint: you can use the empty epsilon-transitions to better fit your FSM in the box.)"}
+                </p>
+
+                <EmailValidatorFSM />
+
+                <hr />
+                <h2>{"4. Non-deterministic state machines"}</h2>
+                <p>{"We have so far mainly spoken about "}<em>{"determenistic automata"}</em>{". "}
+                {"These only ever have a single way to go: there is never a situation where there are two arrows with the same symbol on them. "}
+                {"(Some definitions also demand an absence of empty epsilon-transitions, which I don't think is a necessary condition; "}
+                {"check your course materials for the precise classification.)"}
+                </p>
+                <p>{"But sometimes it is more convenient to describe a language in terms of "}<em>{"non-deterministic automata"}</em>{" — "}
+                {"here, it is allowed to have multiple arrows from the same circle with the same symbol on them. "}
+                {"The automaton will process all of the options in parallel; this visualization uses color to indicate this. "}
+                </p>
+
+                <p><b>{"As you walk the NFSM maze, when meeting a fork in the road like this, we will clone ourselves. Each clone continues along its own branch of the maze. "}
+                {"If at least one clone reaches the exit of the maze, the guide is good and we accept it; "}
+                {"if all the clones get lost, the guide is bad and we reject it. "}</b></p>
+
+                <ol>
+                    <li>{"First we enter the maze and are in state A."}</li>
+                    <li>{"Two arrows interest us: one is labeled "}<WordDisplay word="11010" />{", and the other is labeled "}<WordDisplay word="1" />{". Our guide matches both arrows,  so we clone ourselves and go both ways."}</li>
+                    <li>{"The red clone goes through the arrow to node B, crossing out 5 letters from its guide, while the orange clone goes into the arrow leading to node C, crossing out only one letter."}</li>
+                    <li><ul>
+                        <li>{"The red clone's guide says next to go into "}<WordDisplay word="0" />{", and this circle has only one such arrow so it goes there;"}</li>
+                        <li>{"meanwhile, the orange clone has two exits that are both labeled "}<WordDisplay word="1" />{", so it clones itself again before continuing."}</li>
+                    </ul></li>
+                    <li><ul>
+                        <li>{"Now the red clone goes through the arrow from B to D;"}</li>
+                        <li>{"the orange one follows the arrow from C to Е;"}</li>
+                        <li>{"and the new yellow clone takes the arrow from C to D."}</li>
+                    </ul></li>
+                    <li><ul>
+                        <li>{"Now, the red and yellow clones have met in node D. Node D is shown in yellow, because the yellow clone is newer than the red. But the two clones are at different points in the guide: the red clone is looking at the number "}<WordDisplay word="1" />{", and the yellow one is looking at "}<WordDisplay word="0" />{"."}</li>
+                        <li>{"The orange clone, meanwhile, has gotten lost: its guide says to go on the arrow marked "}<WordDisplay word="0" />{", but node E has only a single exit marked "}<WordDisplay word="1" />{"."}</li>
+                    </ul></li>
+                    <li><ul>
+                        <li>{"The red clone goes on the arrow from D to F;"}</li>
+                        <li>{"the orange clone, formerly in node E, has now gotten lost and died;"}</li>
+                        <li>{"and the former yellow clone is now orange, because it's now number 3 instead of 2. It went on the arrow from D to G."}</li>
+                    </ul></li>
+                    <li><ul>
+                        <li>{"The red clone reached node F, and also the end of its guide. Node F contains an exit from the maze, so this clone has successfully exited the maze."}</li>
+                        <li>{"Because of this, we no longer care what happens with the orange clone. The simulation will continue running (on the next step, it will turn red because the red clone is gone, and eventually it gets lost and dies in node C), but we already know that since one of the clones has reached the exit, this means the guide is good and this Word is Accepted."}</li>
+                    </ul></li>
+
+                </ol>
+
+                <NonDetermMazeFSM />
+
+
+                <p>{"NFAs are often easier to describe a language with than DFAs."}</p>
+                <p>{"For example, the two automata below recognize the same language: "}
+                {"they accept the words that start with 0s and 1s, "}
+                {"but must end in "}<WordDisplay word="10" />{". "}
+                {"The FSM on the right directly represents this idea: in state A, we are looking for both 0s and 1s, but if it was a 1, then we will also check the B-C branch in parallel. "}
+                {"The FSM on the left is a deterministic FSM that accepts the same language; it is notably more complicated, in part because the A state is now spread over all three nodes. "}
+                </p>
+
+                <NonDetermDemoFSM />
+
+                <p>{"NFAs are easier to build, but they are no stronger than DFAs: both kinds of state machines can process all regular languages, and no more. "}
+                {"This is because, first, every DFA is a trivial NFA: given the ability to create clones to navigate the maze in parallel, you would just never do so. "}
+                {"Apart from this, every NFA can be transformed into a DFA, using a particular algorithm known as the "}<a href="https://en.wikipedia.org/wiki/Powerset_construction">{"Powerset construction"}</a>
+                {". However, an NFA with N circles can, in the worst case, be expanded into a DFA with 2^N circles, which may be intractably large."}
+                </p>
+                <p>{"The testing system processes both NFAs and DFAs the same way, so you should use the approach that is easiest for every task."}</p>
+
         </>
     )
 }

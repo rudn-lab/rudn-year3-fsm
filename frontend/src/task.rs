@@ -6,6 +6,8 @@ use fsm::{
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use shadow_clone::shadow_clone;
+use wasm_bindgen::JsCast;
+use web_sys::HtmlInputElement;
 use yew::{prelude::*, suspense::use_future};
 use yew_autoprops::autoprops_component;
 use yew_bootstrap::{
@@ -14,7 +16,7 @@ use yew_bootstrap::{
 };
 use yew_hooks::{use_async, use_interval, use_local_storage};
 
-use crate::canvas::Canvas;
+use crate::canvas_player::CanvasPlayer;
 
 #[derive(Properties, PartialEq, Clone)]
 pub struct TaskPageProps {
@@ -68,6 +70,7 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
 
     let current_fsm = use_state(StateMachine::default);
     let fsm_to_load = use_state(|| None);
+    let init_word = use_state(|| None);
 
     let local_test_outcome = use_state(|| html!());
 
@@ -148,7 +151,13 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
 
             let make_examples = {
                 let script = task.script.clone();
-                shadow_clone!(current_fsm, fsm_to_load, local_test_outcome, examples);
+                shadow_clone!(
+                    current_fsm,
+                    fsm_to_load,
+                    local_test_outcome,
+                    examples,
+                    init_word
+                );
                 move |ev: MouseEvent| {
                     ev.prevent_default();
                     log::info!("Starting local test generate!");
@@ -204,13 +213,27 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                         .iter()
                         .zip(tests_rej.iter())
                         .map(|(a, b)| {
+                            let init_word_out = init_word.clone();
+                            let out_a = a.clone();
+                            let load_a = move |ev: MouseEvent| {
+                                ev.prevent_default();
+                                init_word_out.set(Some(out_a.clone()));
+                            };
+                            let init_word_out = init_word.clone();
+                            let out_b = a.clone();
+                            let load_b = move |ev: MouseEvent| {
+                                ev.prevent_default();
+                                init_word_out.set(Some(out_b.clone()));
+                            };
                             html! {
                                 <tr>
                                     <td>
                                         <WordDisplay word={a.clone()} response={FSMOutput::Accept} />
+                                        <button class="btn btn-outline-primary btn-sm" onclick={load_a} >{BI::ARROW_UP_LEFT_SQUARE}</button>
                                     </td>
                                     <td>
                                         <WordDisplay word={b.clone()} response={FSMOutput::Reject} />
+                                        <button class="btn btn-outline-primary btn-sm" onclick={load_b} >{BI::ARROW_UP_LEFT_SQUARE}</button>
                                     </td>
                                 </tr>
                             }
@@ -235,7 +258,13 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
 
             let run_local_test = {
                 let script = task.script.clone();
-                shadow_clone!(current_fsm, fsm_to_load, local_test_outcome, examples);
+                shadow_clone!(
+                    current_fsm,
+                    fsm_to_load,
+                    local_test_outcome,
+                    examples,
+                    init_word
+                );
                 move |ev: MouseEvent| {
                     log::info!("Starting local evaluation!");
                     ev.prevent_default();
@@ -264,6 +293,7 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                         }
                         Ok(res) => {
                             log::debug!("Tester result: {res:?}");
+                            examples.set(html!());
                             match res {
                                 fsm::tester::FSMTestingOutput::Ok(t) => local_test_outcome.set(html!(<span class="text-success">{"OK: все "}{t}{" тесты прошли"}</span>)),
                                 fsm::tester::FSMTestingOutput::WrongAnswer {
@@ -280,9 +310,25 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                                             return;
                                         }
                                     };
-                                    examples.set(html!(
-                                        <p>{"Ваше решение не работает для слова: "}<WordDisplay word={word_to_test.0} response={word_to_test.1} /></p>
-                                    ));
+                                    let response = match word_to_test.1 {
+                                        FSMOutput::Accept => " (слово следует принимать, а ваш автомат отвергает)",
+                                        FSMOutput::Reject => " (слово следует отвергать, а ваш автомат принимает)",
+                                    };
+                                    let failed_word = word_to_test.0.clone();
+                                    let load_failed = {
+                                        shadow_clone!(init_word);
+                                        move |ev: MouseEvent| {
+                                            ev.prevent_default();
+                                            init_word.set(Some(failed_word.clone()))
+                                        }
+                                    };
+                                    examples.set(
+                                        html!(
+                                        <p>{"Ваше решение не работает для слова: "}<WordDisplay word={word_to_test.0} response={word_to_test.1} />
+                                        <button class="btn btn-sm btn-outline-primary mx-2" onclick={load_failed}>{BI::ARROW_UP_LEFT_SQUARE}</button>
+                                        {response}
+                                        </p>
+                                        ));
                             },
                                 fsm::tester::FSMTestingOutput::FSMInvalid(why) => local_test_outcome.set(html!(<span class="text-warning">{"НЕВЕРНЫЙ ФОРМАТ: "}{why}</span>)),
                             }
@@ -303,17 +349,22 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
                         </div>
                         <Row>
                             <Column>
-                                <Canvas onchange={set_fsm} init={(&*fsm_to_load).clone()} />
+                                <TestableFSM onchange={set_fsm}
+                                init={(&*fsm_to_load).clone()}
+                                init_word={(&*init_word).clone()}/>
                             </Column>
                             <Column>
                                 <ul>
                                     <li>{"Создать кружочек: двойной клик по пустому пространству"}</li>
                                     <li>{"Создать стрелочку: нажать Shift, щелкнуть по начальному кружочку и передвинуть до целевого кружочка"}</li>
                                     <li>{"Создать начальную стрелочку: нажать Shift, щелкнуть по пустому месту и передвинуть до кружочка"}</li>
-                                    <li>{"Передвинуть что-то: щелкнуть и тянуть"}</li>
+                                    <li>{"Передвинуть кружочек: щелкнуть и тянуть"}</li>
+                                    <li>{"Изогнуть стрелочку: щелкнуть и тянуть"}</li>
                                     <li>{"Удалить что-то: щелкнуть, затем нажать Delete"}</li>
-                                    <li>{"Сделать кружочек принимающим: дважды щелкнуть по нему"}</li>
+                                    <li>{"Сделать кружочек принимающим (или наоборот): дважды щелкнуть по нему"}</li>
                                     <li>{"Текст на стрелочках - условие для перехода между состояниями"}</li>
+                                    <li>{"Текст можно писать только, когда мышь внутри поля (есть красная обводка)"}</li>
+                                    <li>{"Если на стрелочке нет текста, на ней нарисована буква эпсилон; пиши текст, чтобы убрать"}</li>
                                 </ul>
                             </Column>
                         </Row>
@@ -336,6 +387,89 @@ fn task_page_inner(props: &TaskPageProps) -> HtmlResult {
     };
 
     Ok(result_html)
+}
+
+#[autoprops_component]
+fn TestableFSM(
+    onchange: Callback<StateMachine>,
+    init: Option<StateMachine>,
+    init_word: Option<AttrValue>,
+) -> Html {
+    let word = use_state_eq(|| String::from(""));
+    let is_running = use_state_eq(|| false);
+    let validity = use_state_eq(|| false);
+
+    let play_pulse = use_state_eq(|| 0usize);
+
+    let fsm = use_state_eq(StateMachine::default);
+
+    if let Some(init) = init {
+        if &*fsm != &init {
+            fsm.set(init);
+        }
+    }
+
+    if let Some(init_word) = init_word {
+        if &*word != init_word {
+            word.set(init_word.to_string());
+        }
+    }
+
+    let on_is_running = {
+        shadow_clone!(is_running);
+        move |run| {
+            is_running.set(run);
+        }
+    };
+
+    let on_validity = {
+        shadow_clone!(validity);
+        move |v| {
+            validity.set(v);
+        }
+    };
+
+    let oninput = {
+        shadow_clone!(word);
+        move |ev: InputEvent| {
+            let target: HtmlInputElement = ev.target().unwrap().dyn_into().unwrap();
+            word.set(target.value());
+        }
+    };
+
+    let onclick = {
+        shadow_clone!(is_running, play_pulse);
+        move |ev: MouseEvent| {
+            ev.prevent_default();
+            is_running.set(true);
+            play_pulse.set(*play_pulse + 1);
+        }
+    };
+
+    let on_fsm_apply = {
+        shadow_clone!(fsm);
+        move |new_fsm: StateMachine| {
+            fsm.set(new_fsm.clone());
+            onchange.emit(new_fsm);
+        }
+    };
+
+    html!(
+        <>
+            <CanvasPlayer word={(&*word).clone()}
+            fsm={(&*fsm).clone()} editable={true} speed_changeable={true}
+            auto_restart={true} show_status_indicator={true} show_transport_buttons={true}
+            pause_on_restart={true} {on_fsm_apply}
+            speed={860} auto_play={false} show_steps_indicator={true}
+            play_pulse={*play_pulse} {on_validity}
+            {on_is_running}/>
+            <form class="input-group my-2" style="width: 800px; margin: 0 auto;">
+                <span class="input-group-text">{"Введите слово для проверки: "}</span>
+                <input class="form-control" disabled={*is_running || !*validity} value={(&*word).clone()} {oninput} />
+                <input class="btn btn-success" disabled={*is_running || !*validity} value="Тест!" type="submit" {onclick} />
+            </form>
+        </>
+    )
 }
 
 #[autoprops_component(WordDisplay)]
