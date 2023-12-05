@@ -184,8 +184,9 @@ impl NormalLink {
                 text_y,
                 Some(-text_angle),
                 me_is_selected,
+                true,
                 selections,
-            ) // TODO: selection
+            )
         } else {
             let text_x = (start.0 + end.0) / 2.0;
             let text_y = (start.1 + end.1) / 2.0;
@@ -197,8 +198,9 @@ impl NormalLink {
                 text_y,
                 Some(text_angle + self.line_angle_adjust),
                 me_is_selected,
+                true,
                 selections,
-            ) // TODO: selection
+            )
         }
         Ok(())
     }

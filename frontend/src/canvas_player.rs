@@ -74,6 +74,9 @@ pub struct CanvasPlayerProps {
 
     #[prop_or_default]
     pub on_terminate: Callback<FSMOutput>,
+
+    #[prop_or_default]
+    pub on_fsm_apply: Callback<StateMachine>,
 }
 
 #[derive(Debug)]
@@ -459,6 +462,7 @@ impl Component for CanvasPlayer {
                 }));
             }
             CanvasPlayerMsg::NewFSMApplied(fsm) => {
+                ctx.props().on_fsm_apply.emit(fsm.clone());
                 self.fsm = fsm;
                 self.reset(true);
             }

@@ -257,6 +257,137 @@ fn EmailValidatorFSM() -> Html {
     )
 }
 
+#[function_component]
+fn FreeDemoFSM() -> Html {
+    let word = use_state(|| String::from(""));
+    let is_running = use_state(|| false);
+    let fsm = use_state(StateMachine::default);
+
+    let on_terminate = {
+        shadow_clone!(is_running);
+        move |_outcome| {
+            is_running.set(false);
+        }
+    };
+
+    let oninput = {
+        shadow_clone!(word);
+        move |ev: InputEvent| {
+            let target: HtmlInputElement = ev.target().unwrap().dyn_into().unwrap();
+            word.set(target.value());
+        }
+    };
+
+    let onclick = {
+        shadow_clone!(is_running);
+        move |ev: MouseEvent| {
+            ev.prevent_default();
+            is_running.set(true);
+        }
+    };
+
+    let on_fsm_apply = {
+        shadow_clone!(fsm);
+        move |new_fsm| {
+            fsm.set(new_fsm);
+        }
+    };
+
+    html!(
+        <>
+            <CanvasPlayer word={(&*word).clone()}
+            fsm={(&*fsm).clone()} editable={true} speed_changeable={true}
+            auto_restart={false} show_status_indicator={true} show_transport_buttons={true}
+            pause_on_restart={true} play_on_change={*is_running} {on_fsm_apply}
+            speed={860}
+            {on_terminate}/>
+            <form class="input-group my-2" style="width: 800px; margin: 0 auto;">
+                <span class="input-group-text">{"Введите слово для проверки: "}</span>
+                <input class="form-control" disabled={*is_running} value={(&*word).clone()} {oninput} />
+                <input class="btn btn-success" disabled={*is_running} value="Тест!" type="submit" {onclick} />
+            </form>
+        </>
+    )
+}
+
+#[function_component]
+fn DetermMazeFSM() -> Html {
+    let word = use_state(|| String::from("0100010"));
+    let fsm: StateMachine = serde_json::from_str(
+        r#"
+        {"nodes":[{"x":135,"y":133,"text":"A","isAcceptState":false},{"x":208,"y":271,"text":"B","isAcceptState":false},{"x":366,"y":152,"text":"C","isAcceptState":true},{"x":514,"y":271,"text":"D","isAcceptState":false},{"x":387,"y":394,"text":"","isAcceptState":true}],"links":[{"type":"StartLink","node":0,"text":"","deltaX":-86,"deltaY":-91},{"type":"Link","nodeA":0,"nodeB":1,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.4367127559184343,"perpendicularPart":70.00449575565976},{"type":"Link","nodeA":1,"nodeB":2,"text":"1","lineAngleAdjust":3.141592653589793,"parallelPart":0.3789904153354632,"perpendicularPart":-81.24856996529694},{"type":"Link","nodeA":2,"nodeB":3,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":3,"nodeB":4,"text":"0010","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0}]}
+        "#,
+    )
+    .unwrap();
+
+    html!(
+        <CanvasPlayer word={(&*word).clone()}
+        fsm={fsm.clone()} editable={false} speed_changeable={true}
+        auto_restart={true} show_status_indicator={true} show_transport_buttons={true}
+        pause_on_restart={false}
+        speed={800}/>
+    )
+}
+
+#[function_component]
+fn NonDetermDemoFSM() -> Html {
+    let word = use_state(|| String::from("110110"));
+    let fsm: StateMachine = serde_json::from_str(
+        r#"
+        {"nodes":[{"x":585,"y":134,"text":"A","isAcceptState":false},{"x":585,"y":260,"text":"B","isAcceptState":false},{"x":585,"y":377,"text":"C","isAcceptState":true},{"x":173,"y":134,"text":"A","isAcceptState":false},{"x":173,"y":253,"text":"A,B","isAcceptState":false},{"x":173,"y":377,"text":"A,C","isAcceptState":true}],"links":[{"type":"SelfLink","node":0,"text":"0","anchorAngle":-0.5633162614919681},{"type":"SelfLink","node":0,"text":"1","anchorAngle":0.3217505543966422},{"type":"Link","nodeA":0,"nodeB":1,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":1,"nodeB":2,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"SelfLink","node":3,"text":"0","anchorAngle":0.0},{"type":"Link","nodeA":3,"nodeB":4,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5714285714285714,"perpendicularPart":0.0},{"type":"Link","nodeA":4,"nodeB":5,"text":"0","lineAngleAdjust":3.141592653589793,"parallelPart":0.6901408450704225,"perpendicularPart":-14.0},{"type":"StartLink","node":3,"text":"","deltaX":72,"deltaY":-80},{"type":"SelfLink","node":4,"text":"1","anchorAngle":0.0},{"type":"Link","nodeA":5,"nodeB":4,"text":"1","lineAngleAdjust":3.141592653589793,"parallelPart":0.5704225352112676,"perpendicularPart":-19.0},{"type":"Link","nodeA":5,"nodeB":3,"text":"0","lineAngleAdjust":3.141592653589793,"parallelPart":0.32510288065843623,"perpendicularPart":-58.0},{"type":"StartLink","node":0,"text":"","deltaX":-96,"deltaY":-92}]}
+        "#,
+    ).unwrap();
+
+    let on_terminate = {
+        shadow_clone!(word);
+        move |_outcome| {
+            let mut seed = [0; 32];
+            for v in seed.iter_mut() {
+                *v = (randfloat() * 256.0) as u8;
+            }
+            let mut rng = ChaCha8Rng::from_seed(seed);
+
+            let mut new_word = String::new();
+            let do_accept = rng.gen_bool(0.5);
+            for i in 0..(rng.gen_range(5..(if do_accept { 7 } else { 10 }))) {
+                new_word.push(if rng.gen_ratio(1, 2) { '0' } else { '1' })
+            }
+            if do_accept {
+                new_word.extend("110".chars());
+            }
+            word.set(new_word);
+        }
+    };
+
+    html!(
+        <CanvasPlayer word={(&*word).clone()}
+        fsm={fsm.clone()} editable={false} speed_changeable={true}
+        auto_restart={true} show_status_indicator={true} show_transport_buttons={true}
+        pause_on_restart={false}
+        speed={800}
+        {on_terminate}/>
+    )
+}
+
+#[function_component]
+fn NonDetermMazeFSM() -> Html {
+    let word = use_state(|| String::from("1101001"));
+    let fsm: StateMachine = serde_json::from_str(
+        r#"
+        {"nodes":[{"x":399,"y":129,"text":"A","isAcceptState":false},{"x":178,"y":225,"text":"B","isAcceptState":false},{"x":539,"y":255,"text":"C","isAcceptState":false},{"x":592,"y":355,"text":"E","isAcceptState":false},{"x":178,"y":355,"text":"D","isAcceptState":false},{"x":178,"y":462,"text":"F","isAcceptState":true},{"x":592,"y":469,"text":"H","isAcceptState":true},{"x":385,"y":469,"text":"G","isAcceptState":false}],"links":[{"type":"StartLink","node":0,"text":"","deltaX":0,"deltaY":-80},{"type":"Link","nodeA":0,"nodeB":1,"text":"11010","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":0,"nodeB":2,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":2,"nodeB":3,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":1,"nodeB":4,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":2,"nodeB":4,"text":"1","lineAngleAdjust":3.141592653589793,"parallelPart":0.37696424626392344,"perpendicularPart":0.0},{"type":"Link","nodeA":4,"nodeB":5,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":3,"nodeB":6,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":4,"nodeB":7,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":7,"nodeB":6,"text":"0","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0},{"type":"Link","nodeA":7,"nodeB":2,"text":"1","lineAngleAdjust":0.0,"parallelPart":0.5,"perpendicularPart":0.0}]}
+        "#,
+    )
+    .unwrap();
+
+    html!(
+        <CanvasPlayer word={(&*word).clone()}
+        fsm={fsm.clone()} editable={false} speed_changeable={true}
+        auto_restart={true} show_status_indicator={true} show_transport_buttons={true}
+        pause_on_restart={false}
+        speed={800}/>
+    )
+}
+
 #[autoprops_component]
 fn WordDisplay(word: AttrValue) -> Html {
     if word.is_empty() {
@@ -291,6 +422,7 @@ pub fn tutorial() -> Html {
                 </p>
                 <p>
                     {"Строка может быть пустой, то есть состоять из нуля символов. Такая строка обозначается символом эпсилон: "}<WordDisplay word="" />
+                    {" (в литературе иногда также используется символ лямбда λ; разницу между ними я не совсем понял, но здесь мы используем эпсилон для пустого слова.)"}
                 </p>
                 <p>
                     <em><a href="https://ru.wikipedia.org/wiki/%D0%A4%D0%BE%D1%80%D0%BC%D0%B0%D0%BB%D1%8C%D0%BD%D1%8B%D0%B9_%D1%8F%D0%B7%D1%8B%D0%BA"><b>{"Формальный язык"}</b></a>
@@ -327,20 +459,44 @@ pub fn tutorial() -> Html {
 
                 <p>{"Когда автомат обрабатывает строку, он хранит внутри себя указатель на состояние. "}
                 {"Изначально указатель указывает на те состояния, к которым есть входящие переходы — стрелочки из пустоты."}</p>
-                <p>{"На каждом шаге автомат смотрит на все стрелочки из текущего состояния. Если на стрелочке написана следующая буква в строке, то по этой стрелочке осуществляется переход."}</p>
-                <p>{"В поле ниже, из состояния A есть две стрелочки: с надписью 0 или 1. Когда строка — "}<WordDisplay word="00" />{", то автомат делает переход по верхней стрелочке, а когда "}<WordDisplay word="01" />{", то по нижней."}</p>
-                <ZeroZeroOrZeroOneFSM />
+                <p>{"На каждом шаге автомат смотрит на все стрелочки из текущего состояния. Если на стрелочке написана следующая буква в строке, то по этой стрелочке осуществляется переход, а курсор передвигается."}</p>
+                <p><b>{"Можно сказать, что мы ходим по лабиринту из стрелочек и кружочков. Проверяемая строка — маршрут по лабиринту. "}
+                {"В каждом кружочке смотрим на доступные выходы. Если есть выход, который соответствует строке, то идем по нему. Кружочки с двойной обводкой — выходы из лабиринта. "}
+                </b></p>
+                <p>{"В этом примере у нас есть простой лабиринт, который имеет только один путь. По шагам:"}</p>
+                <ol>
+                    <li>{"Сначала, мы входим в лабиринт и оказываемся в кружочке A."}</li>
+                    <li>{"Мы смотрим на наш маршрут; он говорит идти по "}<WordDisplay word="0" />{"."}</li>
+                    <li>{"Мы видим выход с надписью "}<WordDisplay word="0" />{" и идем по нему. Мы зачеркиваем "}<WordDisplay word="0" />{" с начала строки: мы уже сделали этот переход в лабиринте. Мы оказываемся в кружочке B."}</li>
+                    <li>{"Наш маршрут дальше говорит нам пойти в выход с надписью "}<WordDisplay word="1" />{". Мы находим такой выход из этого кружочка;"}</li>
+                    <li>{"и после этого идем по этому пути, который ведет в кружочек C. Мы зачеркиваем цифру "}<WordDisplay word="1" />{" из маршрута."}</li>
+                    <li>{"Кружочек C уже имеет выход, но маршрут еще не закончился, поэтому мы идем дальше. Маршрут говорит идти по выходу "}<WordDisplay word="0" />{"."}</li>
+                    <li>{"Мы идем по этому выходу, зачеркивая "}<WordDisplay word="0" />{", и оказываемся в кружочке D."}</li>
+                    <li>{"Здесь мы находим выход, на котором написано "}<WordDisplay word="0010" />{". У нас в маршруте как раз написано, что дальше надо будет идти в выход "}<WordDisplay word="0" />{", затем "}<WordDisplay word="0" />{", затем "}<WordDisplay word="1" />{", и наконец "}<WordDisplay word="0" />{"."}</li>
+                    <li>{"Несколько букв подряд на выходе — это как будто пройти по всем из них одновременно, поэтому мы идем в этот выход, и зачеркиваем все четыре буквы "}<WordDisplay word="0010" />{" из маршрута."}</li>
+                    <li>{"У нас теперь закончился маршрут; в нем нет незачеркнутых букв. И мы также оказались в кружочке, где есть выход из лабиринта. Если такое произошло, это значит, что маршрут был хороший — мы принимаем это слово."}</li>
+                </ol>
 
-                <p>
-                    {"Автомат может двигаться только в одном направлении по строке: каждый переход удаляет какое-то количество символов с начала. "}
-                    {"Существуют также пустые переходы, которые называются лямбда-переходы: они берут ноль символов."}
+                <p>{"Вы можете внимательно просмотреть эти шаги, поставив автомат на паузу с помощью зеленой кнопки, "}
+                {"затем запустить его с начала красной кнопкой, "}
+                {"и исполнять его по отдельным шагам с помощью синей кнопки."}
                 </p>
 
-                <p>{"Если у автомата закончилась строка, и он оказался в принимающем кружочке, то автомат принимает переданное ему слово."}</p>
+                <DetermMazeFSM />
+
+
+                <p>{"Если из кружочка есть несколько выходов, то мы идем только по тем стрелочкам, которые соответствуют маршруту, и игнорируем остальные."}</p>
+                <p>{"В поле ниже, мы сначала идем по стрелочке 0, и оказываемся в состоянии A."}
+                {"Когда строка — "}<WordDisplay word="00" />{", то автомат делает переход по верхней стрелочке, а когда "}<WordDisplay word="01" />{", то по нижней. "}
+                {"Только в верхнем кружочке есть выход, поэтому автомат принимает только строку "}<WordDisplay word="00" />{"."}</p>
+                <ZeroZeroOrZeroOneFSM />
+
+                <p>{"Когда мы зачеркнули все буквы в нашем маршруте, то мы должны стоять на кружочке с выходом. Если это так, то мы успешно вышли из лабиринта, значит маршрут хороший, и автомат принимает такое слово."}</p>
 
                 <ul>
-                    <li>{"Если у автомата закончилась строка, и он оказался в обычном кружочке, то он отвергает строку;"}</li>
-                    <li>{"Если автомат, посередине строки, оказался в таком состоянии, что у него нет пути дальше, то он также отвергает строку."}</li>
+                    <li>{"Если же мы дошли до конца маршрута, но оказались в обычном кружочке, то мы заблудились; маршрут не хороший, и мы отвергаем такое слово."}</li>
+                    <li>{"Если маршрут говорит пойти по стрелочке, которой не существует (например, если в маршруте написано идти в выход "}<WordDisplay word="2" />{", а в этом кружочке есть только выходы "}<WordDisplay word="0" />{" и "}<WordDisplay word="1" />{", значит мы тоже заблудились; в такой ситуации мы также отвергаем слово."}
+                    </li>
                 </ul>
 
                 <h2>{"3. Применения автоматов"}</h2>
@@ -351,13 +507,14 @@ pub fn tutorial() -> Html {
                 <WordDisplay word="A" />
                 {", за которыми идет какое-то количество букв "}<WordDisplay word="B" />
                 {" — для этого нужно лишь хранить одно значение (мы сейчас ждем букву "}<WordDisplay word="A" />{" или "}<WordDisplay word="B" />{"), "}
-                {"и конечный автомат для этого языка требует всего двух состояний."}
+                {"и конечный автомат для этого языка требует всего двух состояний. "}
+                {"Попробуйте ввести разные последовательности "}<em>{"латинских букв"}</em>{" и посмотрите, как автомат их обрабатывает."}
                 </p>
 
                 <AsThenBsFSM />
 
                 <p>{"С другой стороны, нельзя построить конечный автомат, который будет принимать последовательность букв "}<WordDisplay word="A" />{", "}
-                {"а затем последовтаельность букв "}<WordDisplay word="B" /><em>{"такой же длины. "}</em>
+                {"а затем последовательность букв "}<WordDisplay word="B" /><em>{" такой же длины. "}</em>
                 {"Это потому, что теперь нужно хранить количество букв "}<WordDisplay word="A" />{", которые мы видели. "}
                 {"Это количество может быть очень большим; в теории, таким большим, что в нашем компьютере не хватит места, чтобы хранить это число. "}
                 {"Из-за этого такой язык невозможно распознавать конечным автоматом."}
@@ -384,6 +541,68 @@ pub fn tutorial() -> Html {
 
                 <EmailValidatorFSM />
 
+                <h2>{"4. Недетерминированные автоматы"}</h2>
+                <p>{"Пока что мы говорили в основном про "}<em>{"детерминированные конечные автоматы"}</em>{". "}
+                {"В таких автоматах всегда есть только один путь: никогда нет ситуации, когда из одного кружочка есть две стрелочки с одинаковым символом. "}
+                {"(Некоторые определения также исключают существование пустых переходов, но я считаю, что это необязательное условие; "}
+                {"уточните в материалах своего курса, как классифицируются эти автоматы.)"}
+                </p>
+                <p>{"Но иногда бывает удобнее описать язык с помощью "}<em>{"недетерминированного конечного автомата"}</em>{" — "}
+                {"здесь, разрешается иметь несколько стрелочек из одного состояния, имеющих один и тот же символ. "}
+                {"Автомат будет ходить по всем вариантам параллельно; в этой визуализации это показывается разными цветами. "}
+                </p>
+
+                <p><b>{"Ходя по лабиринту НКА, если мы встречаем развилку, то мы клонируем себя. Каждый клон идет по своей ветке лабиринта. "}
+                {"Если хотя бы один клон в итоге дошел до выхода, то маршрут хороший и мы его принимаем; "}
+                {"если все клоны заблудились, то маршрут плохой и мы его отвергаем. "}</b></p>
+
+                <ol>
+                    <li>{"Сначала мы заходим в лабиринт и оказываемся в состоянии A."}</li>
+                    <li>{"Здесь есть два интересных выхода: один с надписью "}<WordDisplay word="11010" />{", а другой — с надписью "}<WordDisplay word="1" />{". Наш маршрут соответствует и той, и другой стрелочке, поэтому мы клонируем себя и идем по обоим путям."}</li>
+                    <li>{"Красный клон идет по стрелочке в кружочек B, зачеркивая 5 букв со своего маршрута, а оранжевый клон идет по стрелочке в кружочек C, зачеркнув всего одну букву."}</li>
+                    <li><ul>
+                        <li>{"У красного клона дальше в маршруте написана цифра "}<WordDisplay word="0" />{", и здесь есть только один такой выход, поэтому он идет туда;"}</li>
+                        <li>{"у оранжевого клона же есть два выхода, на обоих из которых написано "}<WordDisplay word="1" />{", поэтому он клонирует себя еще раз, прежде чем продолжать."}</li>
+                    </ul></li>
+                    <li><ul>
+                        <li>{"Теперь, красный клон идет по стрелочке от B до D;"}</li>
+                        <li>{"оранжевый — по стрелочке от C до Е;"}</li>
+                        <li>{"а новый желтый клон — по стрелочке от C до D."}</li>
+                    </ul></li>
+                    <li><ul>
+                        <li>{"Сейчас, красный и желтый клон встретились в кружочке D. Кружочек D отображается желтым, потому что желтый клон более новый чем красный. Однако, два клона в разных частях своего маршрута: красный клон сейчас смотрит на цифру "}<WordDisplay word="1" />{", а желтый — на "}<WordDisplay word="0" />{"."}</li>
+                        <li>{"Оранжевый клон, в это время, зашел в тупик: у него маршрут говорит идти по стрелочке с надписью "}<WordDisplay word="0" />{", но в кружочке Е единственный путь имеет надпись "}<WordDisplay word="1" />{"."}</li>
+                    </ul></li>
+                    <li><ul>
+                        <li>{"Красный клон пошел по стрелочке от D до F;"}</li>
+                        <li>{"оранжевый клон, который стоял в кружочке Е, заблудился и умер;"}</li>
+                        <li>{"а бывший желтый клон превратился в оранжевого, потому что он теперь второй по порядку, а не третий. Он пошел по стрелочке от D до G."}</li>
+                    </ul></li>
+                    <li><ul>
+                        <li>{"Красный клон дошел до кружочка F, а также до конца своего маршрута. Кружочек F содержит выход, поэтому этот клон успешно дошел до выхода."}</li>
+                        <li>{"Из-за этого, нам уже не важно, что произойдет дальше с оранжевым клоном. Симуляция будет продолжаться (на следующем шаге он превратится в красного, потому что красный ушел, и в итоге он заблудится и умрет в кружочке C), но мы уже знаем, что кто-то смог дойти до выхода, и значит маршрут хороший и принимается."}</li>
+                    </ul></li>
+
+                </ol>
+
+                <NonDetermMazeFSM />
+
+
+                <p>{"НКА часто позволяют описать один и тот же язык легче, чем ДКА."}</p>
+                <p>{"Например, ниже приведены два автомата, которые распознают один и тот же язык: "}
+                {"они принимают слова, которые начинаются с символов 0 и 1, "}
+                {"но должны заканчиваться на "}<WordDisplay word="10" />{". "}
+                {"Автомат справа прямо описывает эту идею: в состоянии A мы принимаем и 0, и 1, но если мы приняли 1, то мы параллельно начинаем проверять ветку из B и C. "}
+                {"Автомат слева — ДКА, который принимает тот же язык; он заметно сложнее, в частности потому что состояние A разделилось на все три кружочка. "}
+                </p>
+
+                <NonDetermDemoFSM />
+
+
+                <h2>{"P.S. Тестер автоматов"}</h2>
+                <p>{"Здесь вы можете использовать компонент визуализации, чтобы отлаживать свои автоматы."}</p>
+
+                <FreeDemoFSM />
 
             </Container>
         </>

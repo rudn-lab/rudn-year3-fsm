@@ -80,6 +80,7 @@ impl StartLink {
             start.1,
             Some(text_angle),
             me_is_selected,
+            false,
             selections,
         ); // TODO: selection;
 

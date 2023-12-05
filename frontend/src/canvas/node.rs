@@ -47,6 +47,7 @@ impl Node {
             self.y,
             None,
             me_is_selected,
+            false,
             selections,
         );
 

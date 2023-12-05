@@ -128,6 +128,7 @@ impl SelfLink {
             text_y,
             Some(self.anchor_angle),
             me_is_selected,
+            true,
             selections,
         ); // TODO: selection
 

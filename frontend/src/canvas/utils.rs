@@ -4,14 +4,20 @@ use super::SelectionContext;
 
 pub(super) fn draw_text(
     c: &CanvasRenderingContext2d,
-    text: &str,
+    real_text: &str,
     mut x: f64,
     mut y: f64,
     angle: Option<f64>,
     me_is_selected: bool,
+    me_is_doublesided_link: bool,
     selections: &SelectionContext,
 ) {
     c.set_font("20px \"Times New Roman\", serif");
+    let text = if real_text.len() == 0 && me_is_doublesided_link {
+        "(λ)"
+    } else {
+        real_text
+    };
     let width = c.measure_text(text).unwrap().width();
 
     // center text
@@ -40,6 +46,9 @@ pub(super) fn draw_text(
         && selections.canvas_is_focused
     {
         x += width;
+        if real_text.len() == 0 {
+            x -= width * 2.0;
+        }
         c.begin_path();
         c.move_to(x, y - 10.0);
         c.line_to(x, y + 10.0);
