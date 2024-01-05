@@ -133,6 +133,8 @@ pub struct SmallSubmissionInfo {
     pub id: i64,
     pub task_id: i64,
     pub when_unix_time: i64,
+    pub node_count: usize,
+    pub link_count: usize,
     pub verdict: SubmissionVerdict,
 }
 

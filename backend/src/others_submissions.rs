@@ -6,6 +6,7 @@ use axum::{
     extract::{Path, State},
     Json,
 };
+use fsm::fsm::StateMachine;
 
 use crate::{result::AppError, AppState};
 
@@ -46,18 +47,21 @@ pub async fn view_specific_user(
     .await?;
     if let Some(data) = user {
         let rows = sqlx::query!(
-            "SELECT id, task_id, when_unix_time, verdict_json FROM user_submission WHERE user_id=?",
+            "SELECT id, task_id, when_unix_time, verdict_json, solution_json FROM user_submission WHERE user_id=?",
             data.id
         )
         .fetch_all(&db)
         .await?;
         let mut submissions = vec![];
         for row in rows {
+            let fsm: StateMachine = serde_json::from_str(&row.solution_json)?;
             submissions.push(SmallSubmissionInfo {
                 id: row.id,
                 task_id: row.task_id,
                 when_unix_time: row.when_unix_time,
                 verdict: serde_json::from_str(&row.verdict_json)?,
+                node_count: fsm.nodes.len(),
+                link_count: fsm.links.len(),
             });
         }
         Ok(Json(UserAndSubmissions::Present {
