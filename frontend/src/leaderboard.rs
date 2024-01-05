@@ -176,11 +176,14 @@ pub fn leaderboard_inner(props: &LeaderboardProps) -> HtmlResult {
                 let task_items: Html = leaderboard.tasks.iter().map(|task| {
                     if let Some(my_submission) = task.latest_submissions.iter().find(|v| v.0 == user.user) {
                         html!(<td><VerdictDisplay verdict={my_submission.5.clone()} /><br />
-                            {unix_time_to_locale_string(my_submission.1 as f64)}<br />{" ("}
+                            {unix_time_to_locale_string(my_submission.1 as f64)}<br />
+                            <Link<Route> classes="" to={Route::Submission{sid: my_submission.2}}>
+                            {" ("}
                             {my_submission.3} // nodes
                             {" кружочков, "}
                             {my_submission.4} // links
                             {" стрелочек)"}
+                            </Link<Route>>
                             </td>)
                     } else {
                         html!(<td class="fs-1">{"∅"}</td>)
