@@ -3,8 +3,12 @@ use shadow_clone::shadow_clone;
 use yew::{prelude::*, suspense::use_future};
 use yew_bootstrap::component::Spinner;
 use yew_hooks::use_interval;
+use yew_router::components::Link;
 
-use crate::task::{prepare_popovers, unix_time_to_locale_string, VerdictDisplay};
+use crate::{
+    task::{prepare_popovers, unix_time_to_locale_string, VerdictDisplay},
+    Route,
+};
 
 #[derive(Properties, PartialEq, Clone)]
 pub struct LeaderboardProps {
@@ -45,8 +49,8 @@ pub fn leaderboard_inner(props: &LeaderboardProps) -> HtmlResult {
     impl SortingMode {
         fn is_for_task(&self) -> bool {
             match self {
-                Self::BySubmissionDate|Self::ByLinkCount|Self::ByNodeCount => true,
-                _ => false
+                Self::BySubmissionDate | Self::ByLinkCount | Self::ByNodeCount => true,
+                _ => false,
             }
         }
     }
@@ -109,8 +113,14 @@ pub fn leaderboard_inner(props: &LeaderboardProps) -> HtmlResult {
                         task_num = 0;
                     }
                     user_set.sort_by(|a, b| {
-                        let user_a_result = leaderboard.tasks[task_num].latest_submissions.iter().find(|v| v.0 == a.user);
-                        let user_b_result = leaderboard.tasks[task_num].latest_submissions.iter().find(|v| v.0 == b.user);
+                        let user_a_result = leaderboard.tasks[task_num]
+                            .latest_submissions
+                            .iter()
+                            .find(|v| v.0 == a.user);
+                        let user_b_result = leaderboard.tasks[task_num]
+                            .latest_submissions
+                            .iter()
+                            .find(|v| v.0 == b.user);
                         match (user_a_result, user_b_result) {
                             (None, None) => std::cmp::Ordering::Equal,
                             (None, Some(_)) => std::cmp::Ordering::Greater,
@@ -120,14 +130,20 @@ pub fn leaderboard_inner(props: &LeaderboardProps) -> HtmlResult {
                     });
                 }
 
-                SortingMode::ByNodeCount|SortingMode::ByLinkCount => {
+                SortingMode::ByNodeCount | SortingMode::ByLinkCount => {
                     let mut task_num = *selected_task;
                     if task_num >= leaderboard.tasks.len() {
                         task_num = 0;
                     }
                     user_set.sort_by(|a, b| {
-                        let user_a_result = leaderboard.tasks[task_num].latest_submissions.iter().find(|v| v.0 == a.user);
-                        let user_b_result = leaderboard.tasks[task_num].latest_submissions.iter().find(|v| v.0 == b.user);
+                        let user_a_result = leaderboard.tasks[task_num]
+                            .latest_submissions
+                            .iter()
+                            .find(|v| v.0 == a.user);
+                        let user_b_result = leaderboard.tasks[task_num]
+                            .latest_submissions
+                            .iter()
+                            .find(|v| v.0 == b.user);
                         match (user_a_result, user_b_result) {
                             (None, None) => std::cmp::Ordering::Equal,
                             (None, Some(_)) => std::cmp::Ordering::Greater,
@@ -138,7 +154,7 @@ pub fn leaderboard_inner(props: &LeaderboardProps) -> HtmlResult {
                                 } else {
                                     a.4.cmp(&b.4)
                                 }
-                            },
+                            }
                         }
                     });
                 }
@@ -173,11 +189,13 @@ pub fn leaderboard_inner(props: &LeaderboardProps) -> HtmlResult {
 
                 html!(<tr>
                         <th scope="row">
-                            <p>{&user.user.name}{" ("}{&user.user.rudn_id}{")"}</p>
+                            <p>
+                                <Link<Route> classes="" to={Route::User{user_id: format!("{}", user.user.id).into()}}>{&user.user.name}{" ("}{&user.user.rudn_id}{")"}</Link<Route>>
+                            </p>
+
                             <p class="fw-normal">{"Посылок: "}{user.ok_submissions}{" ОК / "}{user.total_submissions}{" всего"}</p>
                             <p class="fw-normal">{"Задач: "}{user.attempted_tasks}{" ОК / "}{user.ok_tasks}{" приступил"}</p>
                         </th>
-                        
                         {task_items}
                     </tr>)
             }).collect();
@@ -216,8 +234,6 @@ pub fn leaderboard_inner(props: &LeaderboardProps) -> HtmlResult {
                                 selected_mode.set(SortingMode::ByLinkCount);
                             }
 
-
-
                             what => {
                                 log::error!("Unexpected value for outer select: {what:?}");
                             }
@@ -225,7 +241,7 @@ pub fn leaderboard_inner(props: &LeaderboardProps) -> HtmlResult {
                     })
                 };
                 let outer_select = html!(
-                    <select oninput={on_outer_select}>
+                    <select oninput={on_outer_select} class="form-select">
                         <option value="alpha-name" selected={matches!(*selected_mode, SortingMode::AlphabeticalByName)}>{"По алфавиту по имени"}</option>
                         <option value="alpha-rudnid" selected={matches!(*selected_mode, SortingMode::AlphabeticalByRudnId)}>{"По алфавиту по номеру билета"}</option>
                         <option value="total-submissions" selected={matches!(*selected_mode, SortingMode::ByTotalSubmissions)}>{"По общему количеству посылок от пользователя"}</option>
@@ -255,13 +271,16 @@ pub fn leaderboard_inner(props: &LeaderboardProps) -> HtmlResult {
                         })
                     };
                     html!(
-                    <>
-                        <i>{" для задачи: "}</i>
-                        <select oninput={on_inner_select}>
-                            {for  inner_select_values}
-                        </select>
-                    </>
-                )} else {html!()};
+                        <>
+                            <i>{" для задачи: "}</i>
+                            <select oninput={on_inner_select} class="form-select">
+                                {for inner_select_values}
+                            </select>
+                        </>
+                    )
+                } else {
+                    html!()
+                };
 
                 html!(
                     <>

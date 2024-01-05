@@ -4,9 +4,11 @@ mod editor;
 mod leaderboard;
 mod profile;
 mod scripter;
+mod submission_view;
 mod task;
 mod task_list;
 mod tutorial;
+mod user_page;
 
 use gloo::storage::Storage;
 use yew::prelude::*;
@@ -20,9 +22,12 @@ use crate::leaderboard::Leaderboard;
 use crate::profile::Profile;
 use crate::profile::ProfileNav;
 use crate::scripter::Scripter;
+use crate::submission_view::Submission;
 use crate::task::TaskPage;
 use crate::task_list::HomeTaskList;
+use crate::task_list::TaskById;
 use crate::tutorial::Tutorial;
+use crate::user_page::User;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
@@ -49,6 +54,15 @@ enum Route {
         task_slug: AttrValue,
     },
 
+    #[at("/user/:user_id")]
+    User { user_id: AttrValue },
+
+    #[at("/task-by-id/:task_id")]
+    TaskById { task_id: i64 },
+
+    #[at("/submission/:sid")]
+    Submission { sid: i64 },
+
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -56,19 +70,28 @@ enum Route {
 
 #[function_component]
 fn Home() -> Html {
-    let navigator = use_navigator().unwrap();
+    // let navigator: Navigator = use_navigator().unwrap();
 
     let profile_key = gloo::storage::LocalStorage::get("token");
     let profile_key: Option<String> = match profile_key {
         Ok(key) => key,
         Err(_) => None,
     };
-    if profile_key.is_none() {
-        navigator.push(&Route::Profile);
-    }
+    // if profile_key.is_none() {
+    //     navigator.push(&Route::Profile);
+    // }
 
     html! {
+        <>
+        if profile_key.is_none() {
+            <div class="alert alert-info">
+                        {"Нельзя открыть страницу с заданиями без аккаунта; "}
+                <Link<Route> classes="alert-link" to={Route::Profile}>{"зарегестрируйтесь?"}</Link<Route>>
+            </div>
+        }
+
         <HomeTaskList />
+        </>
     }
 }
 
@@ -86,6 +109,9 @@ fn App() -> Html {
                 task_slug,
             } => html!(<TaskPage {group_slug} {task_slug}/>),
             Route::Tutorial => html!(<Tutorial />),
+            Route::User { user_id } => html!(<User {user_id} />),
+            Route::TaskById { task_id } => html!(<TaskById {task_id} />),
+            Route::Submission { sid } => html!(<Submission id={sid} />),
             Route::NotFound => html!("404"),
         }
     }

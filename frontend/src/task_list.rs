@@ -1,10 +1,13 @@
-use api::TaskGroupInfo;
+use api::{TaskGroupInfo, TaskInfo};
 use shadow_clone::shadow_clone;
-use yew::{prelude::*, suspense::use_future};
+use yew::{
+    prelude::*,
+    suspense::{use_future, use_future_with},
+};
 use yew_autoprops::autoprops_component;
 use yew_bootstrap::{component::Spinner, icons::BI};
 use yew_hooks::use_local_storage;
-use yew_router::components::Link;
+use yew_router::{components::Link, hooks::use_navigator};
 
 use crate::Route;
 
@@ -121,11 +124,12 @@ fn task_status_display_inner(props: &TaskStatusDisplayProps) -> HtmlResult {
         use_future(|| async move {
             let token_value = (&*token).clone();
             if token_value.is_none() {
-                gloo::utils::document()
-                    .location()
-                    .unwrap()
-                    .reload()
-                    .unwrap();
+                // gloo::utils::document()
+                //     .location()
+                //     .unwrap()
+                //     .reload()
+                //     .unwrap();
+                return Ok(false);
             }
             let token_value = token_value.unwrap_or_default();
             reqwest::get(format!(
@@ -145,6 +149,52 @@ fn task_status_display_inner(props: &TaskStatusDisplayProps) -> HtmlResult {
         },
         Err(_why) => {
             html!(<span class="fs-5 text-danger">{BI::EXCLAMATION_TRIANGLE_FILL}</span>)
+        }
+    })
+}
+
+#[derive(PartialEq, Clone, Properties)]
+pub struct TaskByIdProps {
+    pub task_id: i64,
+}
+
+#[function_component(TaskById)]
+pub fn task_by_id(props: &TaskByIdProps) -> Html {
+    let fallback = html!(
+        <Link<Route> classes="" to={Route::TaskById{task_id: props.task_id}}>{"Задание с ID="}{props.task_id}<Spinner /></Link<Route>>
+    );
+    let task_id = props.task_id;
+    html!(
+        <Suspense {fallback}>
+            <TaskLinkInner {task_id} />
+        </Suspense>
+    )
+}
+
+#[function_component(TaskLinkInner)]
+fn task_by_id_inner(props: &TaskByIdProps) -> HtmlResult {
+    let nav = use_navigator().unwrap();
+    let resp = {
+        use_future_with(props.task_id, |task_id| async move {
+            let user_info =
+                reqwest::get(format!("https://fsm-api.rudn-lab.ru/task-by-id/{task_id}",))
+                    .await?
+                    .error_for_status()?
+                    .json::<TaskInfo>()
+                    .await?;
+            Ok::<_, reqwest::Error>(user_info)
+        })?
+    };
+    Ok(match *resp {
+        Err(ref failure) => {
+            html!(<div class="alert alert-danger">{"Ошибка при загрузке задания. Перезагрузите страницу. Причина: "}{failure}</div>)
+        }
+        Ok(ref info) => {
+            nav.replace(&Route::Task {
+                group_slug: "_".into(),
+                task_slug: info.slug.clone().into(),
+            });
+            html!(<p>{"Перенаправляем на страницу задания..."}</p>)
         }
     })
 }
