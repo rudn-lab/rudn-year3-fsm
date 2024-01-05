@@ -44,6 +44,7 @@ pub async fn main() -> anyhow::Result<()> {
             "/tasks/:group/leaderboard",
             get(task::get_taskgroup_leaderboard),
         )
+        .route("/task-by-id/:id", get(task::get_task_by_id))
         .route("/tasks/:group/:task", get(task::get_task))
         .route(
             "/tasks/:group/:task/:token",
@@ -55,7 +56,10 @@ pub async fn main() -> anyhow::Result<()> {
         )
         .route("/users", get(others_submissions::view_users))
         .route("/users/:id", get(others_submissions::view_specific_user))
-        .route("/submissions/:sid/:token", get(others_submissions::view_submission))
+        .route(
+            "/submissions/:sid/:token",
+            get(others_submissions::view_submission),
+        )
         .layer(
             tower_http::cors::CorsLayer::new()
                 .allow_methods(Any)
@@ -84,6 +88,7 @@ async fn root() -> &'static str {
         "GET /tasks/:group/:task/:token/success -- get whether the user has successfully solved this task\n",
         "GET /users -- get list of users and their cumulative stats\n",
         "GET /users/:userid -- get a particular user's submissions\n",
-        "GET /submissions/:submissionid/:token -- get a particular submission, including its contents if the given user has also solved it"
+        "GET /submissions/:submissionid/:token -- get a particular submission, including its contents if the given user has also solved it",
+        "GET /task-by-id/:task-id -- get info about a task by its ID",
     )
 }

@@ -201,6 +201,29 @@ pub async fn get_task(
     }
 }
 
+pub async fn get_task_by_id(
+    State(AppState { db }): State<AppState>,
+    Path(id): Path<i64>,
+) -> Result<(StatusCode, Json<Option<TaskInfo>>), AppError> {
+    let task = sqlx::query!("SELECT * FROM task WHERE id=?", id)
+        .fetch_optional(&db)
+        .await?;
+
+    if let Some(t) = task {
+        Ok((
+            StatusCode::OK,
+            Json(Some(TaskInfo {
+                name: t.title,
+                slug: t.slug,
+                legend: t.legend,
+                script: t.script,
+            })),
+        ))
+    } else {
+        Ok((StatusCode::NOT_FOUND, Json(None)))
+    }
+}
+
 pub async fn get_task_and_userdata(
     State(AppState { db }): State<AppState>,
     Path((_group_slug, task_slug, user_token)): Path<(String, String, String)>,
