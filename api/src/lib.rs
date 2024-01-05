@@ -109,3 +109,49 @@ impl SubmissionVerdict {
         }
     }
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct UserAndSubmissionStats {
+    pub user: SmallUserInfo,
+    pub total_submissions: usize,
+    pub ok_submissions: usize,
+    pub attempted_tasks: usize,
+    pub ok_tasks: usize,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub enum UserAndSubmissions {
+    Present {
+        user: SmallUserInfo,
+        submissions: Vec<SmallSubmissionInfo>,
+    },
+    UserNotFound,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct SmallSubmissionInfo {
+    pub id: i64,
+    pub task_id: i64,
+    pub when_unix_time: i64,
+    pub verdict: SubmissionVerdict,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct OthersSubmissionInfo {
+    pub id: i64,
+    pub when_unix_time: i64,
+    pub task_id: i64,
+    pub submitting_user: SmallUserInfo,
+    pub verdict: SubmissionVerdict,
+    pub details: OthersSubmissionDetails,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub enum OthersSubmissionDetails {
+    /// You cannot see the details of this submission because you're using guest access.
+    GuestAccess,
+    /// You cannot see the details of this submission because you haven't solved this task yourself.
+    SolveThisFirst,
+    /// You can see the details
+    Ok(StateMachine),
+}

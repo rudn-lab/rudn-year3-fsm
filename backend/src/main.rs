@@ -1,3 +1,4 @@
+mod others_submissions;
 mod result;
 pub mod submit;
 mod task;
@@ -52,6 +53,9 @@ pub async fn main() -> anyhow::Result<()> {
             "/tasks/:group/:task/:token/success",
             get(task::get_task_success),
         )
+        .route("/users", get(others_submissions::view_users))
+        .route("/users/:id", get(others_submissions::view_specific_user))
+        .route("/submissions/:sid/:token", get(others_submissions::view_submission))
         .layer(
             tower_http::cors::CorsLayer::new()
                 .allow_methods(Any)
@@ -76,6 +80,10 @@ async fn root() -> &'static str {
         "POST /user-info -- register and get new user's info\n",
         "GET /tasks -- get list of task groups\n",
         "GET /tasks/:group -- get list of tasks in a group\n",
-        "GET /tasks/:group/:task -- get info about task\n"
+        "GET /tasks/:group/:task -- get info about task\n",
+        "GET /tasks/:group/:task/:token/success -- get whether the user has successfully solved this task\n",
+        "GET /users -- get list of users and their cumulative stats\n",
+        "GET /users/:userid -- get a particular user's submissions\n",
+        "GET /submissions/:submissionid/:token -- get a particular submission, including its contents if the given user has also solved it"
     )
 }
