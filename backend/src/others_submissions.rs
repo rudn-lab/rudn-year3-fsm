@@ -18,7 +18,7 @@ pub async fn view_users(
         INNER JOIN (SELECT user_id, count(1) total_submissions FROM user_submission GROUP BY user_id) t1 ON t1.user_id = account.id
         INNER JOIN (SELECT user_id, count(1) ok_submissions FROM user_submission WHERE is_success=1 GROUP BY user_id) t2 ON t2.user_id = account.id
         INNER JOIN (SELECT user_id, count(DISTINCT task_id) attempted_tasks FROM user_submission GROUP BY user_id) t3 ON t3.user_id = account.id
-        INNER JOIN (SELECT user_id, count(DISTINCT task_id) ok_tasks FROM user_submission GROUP BY user_id) t4 ON t4.user_id = account.id
+        INNER JOIN (SELECT user_id, count(DISTINCT task_id) ok_tasks FROM user_submission WHERE is_success=1 GROUP BY user_id) t4 ON t4.user_id = account.id
     "#).fetch_all(&db).await? {
         data.push(UserAndSubmissionStats {
             user: SmallUserInfo{
